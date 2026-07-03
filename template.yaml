@@ -1,0 +1,267 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: td Puzzles API
+
+Parameters:
+  JwtSecret:
+    Type: String
+    NoEcho: true
+  GoogleOAuthClientId:
+    Type: String
+    Default: ""
+  AllowDevLogin:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+  ResendApiKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+  ResendSenderEmail:
+    Type: String
+    Default: ""
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures: [x86_64]
+    Timeout: 10
+    # 512MB headroom for the ~370k-word dictionary held in memory for Boggle
+    # word validation (app/services/boggle.py), loaded once per cold start.
+    MemorySize: 512
+
+Resources:
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins: ["*"]
+        AllowHeaders: ["Authorization", "Content-Type"]
+        AllowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"]
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .build/
+      Handler: app.main.handler
+      Environment:
+        Variables:
+          USERS_TABLE: !Ref UsersTable
+          IDENTITIES_TABLE: !Ref IdentitiesTable
+          PUZZLES_TABLE: !Ref PuzzlesTable
+          SCORES_TABLE: !Ref ScoresTable
+          FRIENDSHIPS_TABLE: !Ref FriendshipsTable
+          FRIEND_REQUESTS_TABLE: !Ref FriendRequestsTable
+          VERIFICATION_CODES_TABLE: !Ref VerificationCodesTable
+          PASSWORD_RESET_CODES_TABLE: !Ref PasswordResetCodesTable
+          ACHIEVEMENTS_TABLE: !Ref AchievementsTable
+          JWT_SECRET: !Ref JwtSecret
+          GOOGLE_OAUTH_CLIENT_ID: !Ref GoogleOAuthClientId
+          ALLOW_DEV_LOGIN: !Ref AllowDevLogin
+          RESEND_API_KEY: !Ref ResendApiKey
+          RESEND_SENDER_EMAIL: !Ref ResendSenderEmail
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref IdentitiesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PuzzlesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ScoresTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FriendshipsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref VerificationCodesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PasswordResetCodesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FriendRequestsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AchievementsTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /{proxy+}
+            Method: ANY
+
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+        - AttributeName: display_name_lower
+          AttributeType: S
+        - AttributeName: email_lower
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: byDisplayNameLower
+          KeySchema:
+            - AttributeName: display_name_lower
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: byEmailLower
+          KeySchema:
+            - AttributeName: email_lower
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      # Guest accounts (created via POST /v1/auth/guest) set guest_expires_at_epoch;
+      # real accounts never set it, so they're unaffected by this TTL.
+      TimeToLiveSpecification:
+        AttributeName: guest_expires_at_epoch
+        Enabled: true
+
+  IdentitiesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: provider
+          AttributeType: S
+        - AttributeName: provider_subject
+          AttributeType: S
+        - AttributeName: user_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: provider
+          KeyType: HASH
+        - AttributeName: provider_subject
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: byUserId
+          KeySchema:
+            - AttributeName: user_id
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  PuzzlesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: puzzle_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: puzzle_id
+          KeyType: HASH
+
+  ScoresTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: puzzle_id
+          AttributeType: S
+        - AttributeName: user_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: puzzle_id
+          KeyType: HASH
+        - AttributeName: user_id
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: byUserId
+          KeySchema:
+            - AttributeName: user_id
+              KeyType: HASH
+            - AttributeName: puzzle_id
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      # A guest's score row sets guest_expires_at_epoch (copied from their UsersTable
+      # record) so an abandoned guest's score is cleaned up alongside their account;
+      # real scores and claimed-then-deleted guest scores never set it.
+      TimeToLiveSpecification:
+        AttributeName: guest_expires_at_epoch
+        Enabled: true
+
+  FriendshipsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+        - AttributeName: friend_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+        - AttributeName: friend_id
+          KeyType: RANGE
+
+  FriendRequestsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: to_user_id
+          AttributeType: S
+        - AttributeName: from_user_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: to_user_id
+          KeyType: HASH
+        - AttributeName: from_user_id
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: byFromUserId
+          KeySchema:
+            - AttributeName: from_user_id
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  VerificationCodesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expires_at_epoch
+        Enabled: true
+
+  PasswordResetCodesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expires_at_epoch
+        Enabled: true
+
+  AchievementsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+
+Outputs:
+  ApiUrl:
+    Description: Base URL of the deployed API
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
