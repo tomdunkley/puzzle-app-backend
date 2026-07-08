@@ -81,7 +81,7 @@ def find_reachable(numbers: list[int]) -> dict[int, list[dict]]:
 
 
 def generate_round(seed: str) -> dict:
-    """Deterministic round for a given seed (e.g. "numbers_2026-06-27"): 1-4 distinct
+    """Deterministic round for a given seed (e.g. "numbers_2026-06-27"): 0-4 distinct
     big numbers (25/50/75/100) plus small numbers (1-10, duplicates allowed) filling
     the rest of six, and a 3-digit target chosen from what's actually reachable --
     so a solution is guaranteed to exist by construction, never by luck. The bigs are
@@ -89,7 +89,7 @@ def generate_round(seed: str) -> dict:
     """
     rng = random.Random(seed)
     for _attempt in range(50):
-        big_count = rng.randint(1, 4)
+        big_count = rng.randint(0, 4)
         bigs = rng.sample(BIG_NUMBERS, big_count)
         smalls = [rng.randint(1, 10) for _ in range(6 - big_count)]
         numbers = bigs + smalls
