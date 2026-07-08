@@ -81,6 +81,46 @@ def can_form_word(board: list[str], word: str) -> bool:
 
 
 @lru_cache(maxsize=1)
+def _all_word_prefixes() -> frozenset[str]:
+    """All prefixes that appear in at least one dictionary word — used to prune the DFS
+    in find_all_words so we never continue down a path that can't form a valid word."""
+    return frozenset(
+        word[:i]
+        for word in _dictionary()
+        for i in range(1, len(word) + 1)
+    )
+
+
+def find_all_words(board: list[str]) -> list[dict]:
+    """Find every valid word (≥ MIN_WORD_LENGTH letters) that can be formed on the board.
+    Returns [{word, score}, …] sorted longest-first then alphabetically.
+    """
+    dictionary = _dictionary()
+    prefixes = _all_word_prefixes()
+    found: set[str] = set()
+
+    def dfs(index: int, visited: set[int], current: str) -> None:
+        word = current + board[index]
+        if word not in prefixes:
+            return
+        if len(word) >= MIN_WORD_LENGTH and word in dictionary:
+            found.add(word)
+        visited.add(index)
+        for neighbor in _ADJACENCY[index]:
+            if neighbor not in visited:
+                dfs(neighbor, visited, word)
+        visited.remove(index)
+
+    for start in range(len(board)):
+        dfs(start, set(), "")
+
+    return sorted(
+        [{"word": w, "score": score_for_word_length(len(w))} for w in found],
+        key=lambda x: (-len(x["word"]), x["word"]),
+    )
+
+
+@lru_cache(maxsize=1)
 def _dictionary() -> frozenset[str]:
     path = Path(__file__).resolve().parent.parent / "data" / "dictionary.txt"
     with path.open(encoding="utf-8") as f:

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.auth.dependency import get_current_user_id, get_verified_user_id
-from app.models.puzzles import Puzzle
-from app.services.puzzle_service import get_or_create_today_puzzle, get_puzzle
+from app.models.puzzles import AllWordsResponse, Puzzle, WordEntry
+from app.services.puzzle_service import get_or_create_today_puzzle, get_puzzle, get_puzzle_all_words
 from app.services.score_service import get_user_score_item
 from app.services.user_service import get_user
 
@@ -47,6 +47,14 @@ def _to_response(puzzle: dict, user_id: str) -> Puzzle:
 def get_today_puzzle(game: str, user_id: str = Depends(get_verified_user_id)):
     puzzle = get_or_create_today_puzzle(game)
     return _to_response(puzzle, user_id)
+
+
+@router.get("/puzzles/{puzzle_id}/all-words", response_model=AllWordsResponse)
+def get_all_words_for_puzzle(puzzle_id: str, _user_id: str = Depends(get_current_user_id)):
+    words = get_puzzle_all_words(puzzle_id)
+    if words is None:
+        raise HTTPException(status_code=404, detail="puzzle not found or not a boggle puzzle")
+    return AllWordsResponse(words=[WordEntry(**w) for w in words])
 
 
 @router.get("/puzzles/{puzzle_id}", response_model=Puzzle)

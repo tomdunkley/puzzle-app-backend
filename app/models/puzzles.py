@@ -3,6 +3,15 @@ from pydantic import BaseModel
 from app.models.users import StreakInfo
 
 
+class WordEntry(BaseModel):
+    word: str
+    score: int
+
+
+class AllWordsResponse(BaseModel):
+    words: list[WordEntry]
+
+
 class NumbersStep(BaseModel):
     a: int
     op: str
