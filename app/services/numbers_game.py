@@ -5,6 +5,9 @@ BIG_NUMBERS = [25, 50, 75, 100]
 TARGET_MIN = 100
 TARGET_MAX = 999
 
+_BIG_NUMBERS = frozenset({25, 50, 75, 100})
+_SOLUTION_CAP = 200
+
 
 class InvalidNumbersAttemptError(Exception):
     pass
@@ -80,6 +83,67 @@ def find_reachable(numbers: list[int]) -> dict[int, list[dict]]:
     return reachable
 
 
+def _human_score(steps: list[dict]) -> tuple:
+    """Lower is more human-like. Priority: fewest steps → big numbers early → smallest
+    max intermediate → roundest intermediate values.
+    """
+    n = len(steps)
+    big_early = -sum(
+        (n - i) for i, s in enumerate(steps)
+        if s["a"] in _BIG_NUMBERS or s["b"] in _BIG_NUMBERS
+    )
+    max_intermediate = max((s["result"] for s in steps), default=0)
+    round_score = -sum(
+        4 if s["result"] % 100 == 0 else
+        3 if s["result"] % 50 == 0 else
+        2 if s["result"] % 25 == 0 else
+        1 if s["result"] % 10 == 0 else
+        0 if s["result"] % 5 == 0 else -1
+        for s in steps
+    )
+    return (n, big_early, max_intermediate, round_score)
+
+
+def find_best_solution(numbers: list[int], target: int) -> list[dict]:
+    """Collects up to _SOLUTION_CAP solutions then returns the most human-like one.
+    Re-uses the same memoized DFS as find_reachable but gathers all paths to the
+    target rather than stopping at the first.
+    """
+    if target in numbers:
+        return []
+
+    solutions: list[list[dict]] = []
+    seen_states: set[tuple[int, ...]] = set()
+
+    def visit(tiles: list[dict]) -> None:
+        if len(solutions) >= _SOLUTION_CAP:
+            return
+        state = tuple(sorted(t["value"] for t in tiles))
+        if state in seen_states:
+            return
+        seen_states.add(state)
+        for tile in tiles:
+            if tile["value"] == target and tile["steps"]:
+                solutions.append(tile["steps"])
+                if len(solutions) >= _SOLUTION_CAP:
+                    return
+        if len(tiles) < 2:
+            return
+        for i in range(len(tiles)):
+            for j in range(i + 1, len(tiles)):
+                if len(solutions) >= _SOLUTION_CAP:
+                    return
+                a_tile, b_tile = tiles[i], tiles[j]
+                rest = [t for k, t in enumerate(tiles) if k != i and k != j]
+                for left, op, right, result in _combine_options(a_tile["value"], b_tile["value"]):
+                    step = {"a": left, "op": op, "b": right, "result": result}
+                    new_tile = {"value": result, "steps": a_tile["steps"] + b_tile["steps"] + [step]}
+                    visit(rest + [new_tile])
+
+    visit([{"value": n, "steps": []} for n in numbers])
+    return min(solutions, key=_human_score) if solutions else []
+
+
 def generate_round(seed: str) -> dict:
     """Deterministic round for a given seed (e.g. "numbers_2026-06-27"): 0-4 distinct
     big numbers (25/50/75/100) plus small numbers (1-10, duplicates allowed) filling
@@ -99,7 +163,7 @@ def generate_round(seed: str) -> dict:
         if not targets:
             continue
         target = rng.choice(targets)
-        return {"numbers": numbers, "target": target, "solution": reachable[target]}
+        return {"numbers": numbers, "target": target, "solution": find_best_solution(numbers, target)}
     raise RuntimeError("failed to generate a solvable numbers round")
 
 
