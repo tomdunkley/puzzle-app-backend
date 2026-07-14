@@ -1,0 +1,37 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}td Puzzles{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'games/css/style.css' %}">
+  {% block extra_head %}{% endblock %}
+  <script>
+    window.TD_API_BASE = "{{ api_base_url }}";
+    window.TD_GOOGLE_CLIENT_ID = "{{ google_client_id }}";
+  </script>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">td Puzzles</a>
+    <div class="nav-links">
+      <a href="/boggle/" class="nav-link">Words</a>
+      <a href="/numbers/" class="nav-link">Numbers</a>
+      <a href="/leaderboard/" class="nav-link">Leaderboard</a>
+      <a href="/friends/" class="nav-link">Friends</a>
+      <a href="/trophies/" class="nav-link">Trophies</a>
+    </div>
+    <div class="nav-auth" id="nav-auth"></div>
+  </div>
+</nav>
+
+<main class="main">
+  {% block content %}{% endblock %}
+</main>
+
+<script src="{% static 'games/js/api.js' %}"></script>
+<script src="{% static 'games/js/auth.js' %}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

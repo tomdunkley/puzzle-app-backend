@@ -1,0 +1,64 @@
+{% extends "games/base.html" %}
+{% block title %}Words — td Puzzles{% endblock %}
+{% block content %}
+<div class="game-page">
+  <div class="game-header">
+    <h1>Words</h1>
+    <div class="game-meta">
+      <span id="timer" class="timer">3:00</span>
+      <span id="word-count" class="word-count">0 words</span>
+    </div>
+  </div>
+
+  <div id="state-loading" class="state-panel">
+    <p>Loading today's puzzle…</p>
+  </div>
+
+  <div id="state-already-played" class="state-panel" style="display:none">
+    <p class="alert alert-success">You've already played today's Words puzzle!</p>
+    <p id="already-score" style="font-size:1.25rem; font-weight:700; margin:12px 0"></p>
+    <p id="already-words" style="color:var(--ink-mid); font-size:0.9rem; margin-bottom:16px"></p>
+    <a href="/leaderboard/" class="btn btn-secondary">View Leaderboard</a>
+  </div>
+
+  <div id="state-playing" style="display:none">
+    <div class="board-wrap">
+      <div id="board" class="board"></div>
+    </div>
+    <div class="current-word-wrap">
+      <div id="current-word" class="current-word"></div>
+    </div>
+    <div class="found-words-wrap">
+      <div id="found-words" class="found-words-chips"></div>
+    </div>
+    <button class="btn btn-ghost" id="pause-btn" style="margin-top:12px">Pause</button>
+  </div>
+
+  <div id="state-paused" class="state-panel" style="display:none">
+    <p style="font-size:1.4rem; font-weight:700; margin-bottom:8px">Paused</p>
+    <p id="pause-score" style="font-size:1.1rem; color:var(--ink-mid); margin-bottom:20px"></p>
+    <button class="btn btn-primary" id="resume-btn">Resume</button>
+    <button class="btn btn-ghost" id="finish-early-btn" style="margin-top:8px">Finish</button>
+  </div>
+
+  <div id="state-results" class="state-panel" style="display:none">
+    <div class="results-header">
+      <h2 id="results-score"></h2>
+      <p id="results-words-label" style="color:var(--ink-mid); margin:4px 0 20px"></p>
+    </div>
+    <div id="results-words" class="found-words-chips"></div>
+    <div style="margin-top:24px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center">
+      <a href="/leaderboard/" class="btn btn-secondary">Leaderboard</a>
+      <button class="btn btn-ghost" id="share-btn">Share</button>
+    </div>
+    <p id="share-msg" style="font-size:0.82rem; color:var(--ink-mid); text-align:center; margin-top:8px; display:none">Copied to clipboard!</p>
+  </div>
+
+  <div id="state-error" class="state-panel" style="display:none">
+    <p class="alert alert-error" id="error-msg"></p>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="{% static 'games/js/boggle.js' %}"></script>
+{% endblock %}

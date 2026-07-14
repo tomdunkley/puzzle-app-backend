@@ -1,0 +1,68 @@
+{% extends "games/base.html" %}
+{% block title %}Numbers — td Puzzles{% endblock %}
+{% block content %}
+<div class="game-page">
+  <div class="game-header">
+    <h1>Numbers</h1>
+    <div class="game-meta">
+      <span id="timer" class="timer">3:00</span>
+    </div>
+  </div>
+
+  <div id="state-loading" class="state-panel">
+    <p>Loading today's puzzle…</p>
+  </div>
+
+  <div id="state-already-played" class="state-panel" style="display:none">
+    <p class="alert alert-success">You've already played today's Numbers puzzle!</p>
+    <p id="already-result" style="font-size:1.1rem; color:var(--ink-mid); margin-bottom:16px"></p>
+    <a href="/leaderboard/" class="btn btn-secondary">View Leaderboard</a>
+  </div>
+
+  <div id="state-playing" style="display:none">
+    <div class="numbers-target-wrap">
+      <span class="numbers-target-label">Target</span>
+      <span id="target" class="numbers-target"></span>
+    </div>
+
+    <div id="tiles" class="numbers-tiles"></div>
+
+    <div id="calc-display" class="calc-display"></div>
+
+    <div class="numbers-operators">
+      <button class="op-btn" data-op="+">+</button>
+      <button class="op-btn" data-op="−">−</button>
+      <button class="op-btn" data-op="×">×</button>
+      <button class="op-btn" data-op="÷">÷</button>
+    </div>
+
+    <div class="numbers-actions">
+      <button class="btn btn-ghost" id="undo-btn">Undo</button>
+      <button class="btn btn-ghost" id="reset-btn">Reset</button>
+      <button class="btn btn-primary" id="submit-btn" disabled>Submit</button>
+    </div>
+  </div>
+
+  <div id="state-results" class="state-panel" style="display:none">
+    <div class="results-header">
+      <h2 id="results-headline"></h2>
+      <p id="results-sub" style="color:var(--ink-mid); margin:4px 0 20px; font-size:0.95rem"></p>
+    </div>
+    <div id="results-steps" class="numbers-solution"></div>
+    <div id="solution-wrap" style="display:none; margin-top:20px">
+      <p style="font-size:0.8rem; color:var(--ink-mid); margin-bottom:8px; text-transform:uppercase; letter-spacing:.05em">Today's suggested solution</p>
+      <div id="solution-steps" class="numbers-solution numbers-solution--muted"></div>
+    </div>
+    <div style="margin-top:24px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center">
+      <a href="/leaderboard/" class="btn btn-secondary">Leaderboard</a>
+    </div>
+  </div>
+
+  <div id="state-error" class="state-panel" style="display:none">
+    <p class="alert alert-error" id="error-msg"></p>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="{% static 'games/js/numbers.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "games/base.html" %}
+{% block title %}td Puzzles{% endblock %}
+{% block content %}
+<div class="home-hero">
+  <h1>td Puzzles</h1>
+  <p>Two daily puzzles. Play without an account, or sign in to track your scores and compete with friends.</p>
+</div>
+
+<div class="game-cards">
+  <a href="/boggle/" class="game-card">
+    <h2>Words</h2>
+    <p>Find as many words as you can in the 5×5 letter grid before time runs out.</p>
+    <span class="game-card-cta">Play today's puzzle →</span>
+  </a>
+  <a href="/numbers/" class="game-card">
+    <h2>Numbers</h2>
+    <p>Combine six numbers using arithmetic to reach the target value.</p>
+    <span class="game-card-cta">Play today's puzzle →</span>
+  </a>
+</div>
+{% endblock %}

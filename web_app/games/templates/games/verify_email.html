@@ -1,0 +1,57 @@
+{% extends "games/base.html" %}
+{% block title %}Verify Email — td Puzzles{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <h1>Verify Your Email</h1>
+  <p style="color:var(--ink-mid); margin-bottom:24px; font-size:0.9rem">
+    We sent a 6-digit code to your email. Enter it below to verify your account.
+  </p>
+
+  <div id="success-msg" class="alert alert-success" style="display:none">
+    Email verified! <a href="/">Start playing →</a>
+  </div>
+
+  <div id="form-area">
+    <div id="form-error" class="alert alert-error" style="display:none"></div>
+    <div class="form-group">
+      <label class="form-label" for="code">Verification Code</label>
+      <input class="form-input" type="text" id="code" maxlength="6" placeholder="123456" inputmode="numeric" autocomplete="one-time-code">
+    </div>
+    <button class="btn btn-primary btn-full" id="verify-btn">Verify</button>
+    <button class="btn btn-ghost btn-full" id="resend-btn" style="margin-top:8px">Resend code</button>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+  document.getElementById('verify-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('verify-btn');
+    const errEl = document.getElementById('form-error');
+    const code = document.getElementById('code').value.trim();
+    errEl.style.display = 'none';
+    if (!code) { errEl.textContent = 'Please enter the code.'; errEl.style.display = ''; return; }
+    btn.disabled = true; btn.textContent = 'Verifying…';
+    try {
+      await API.post('v1/auth/verify-email', { code });
+      document.getElementById('form-area').style.display = 'none';
+      document.getElementById('success-msg').style.display = '';
+    } catch (e) {
+      errEl.textContent = e.message; errEl.style.display = '';
+      btn.disabled = false; btn.textContent = 'Verify';
+    }
+  });
+
+  document.getElementById('resend-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('resend-btn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      await API.post('v1/auth/resend-verification');
+      btn.textContent = 'Code sent!';
+      setTimeout(() => { btn.disabled = false; btn.textContent = 'Resend code'; }, 30000);
+    } catch (e) {
+      btn.textContent = e.message;
+      setTimeout(() => { btn.disabled = false; btn.textContent = 'Resend code'; }, 5000);
+    }
+  });
+</script>
+{% endblock %}

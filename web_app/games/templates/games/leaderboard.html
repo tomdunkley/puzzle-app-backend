@@ -1,0 +1,44 @@
+{% extends "games/base.html" %}
+{% block title %}Leaderboard — td Puzzles{% endblock %}
+{% block content %}
+<div class="page-content">
+  <h1>Leaderboard</h1>
+  <p class="page-subtitle">Your scores vs. your friends — today's puzzles.</p>
+
+  <div id="auth-notice" class="alert alert-info" style="display:none">
+    <a href="/login/">Log in</a> to see how you rank against your friends.
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab active" data-tab="boggle">Words</button>
+    <button class="tab" data-tab="numbers">Numbers</button>
+  </div>
+
+  <div id="tab-boggle" class="tab-content">
+    <div id="boggle-loading" class="state-panel"><p>Loading…</p></div>
+    <div id="boggle-error" class="alert alert-error" style="display:none"></div>
+    <table id="boggle-table" class="leaderboard-table" style="display:none">
+      <thead><tr><th>#</th><th>Player</th><th>Score</th><th>Words</th></tr></thead>
+      <tbody id="boggle-tbody"></tbody>
+    </table>
+    <p id="boggle-empty" style="display:none; color:var(--ink-mid); text-align:center; margin-top:24px">
+      No scores yet. <a href="/friends/">Add some friends</a> to compare!
+    </p>
+  </div>
+
+  <div id="tab-numbers" class="tab-content" style="display:none">
+    <div id="numbers-loading" class="state-panel"><p>Loading…</p></div>
+    <div id="numbers-error" class="alert alert-error" style="display:none"></div>
+    <table id="numbers-table" class="leaderboard-table" style="display:none">
+      <thead><tr><th>#</th><th>Player</th><th>Result</th><th>Steps</th></tr></thead>
+      <tbody id="numbers-tbody"></tbody>
+    </table>
+    <p id="numbers-empty" style="display:none; color:var(--ink-mid); text-align:center; margin-top:24px">
+      No scores yet. <a href="/friends/">Add some friends</a> to compare!
+    </p>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="{% static 'games/js/leaderboard.js' %}"></script>
+{% endblock %}

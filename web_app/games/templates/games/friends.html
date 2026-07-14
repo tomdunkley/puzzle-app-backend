@@ -1,0 +1,34 @@
+{% extends "games/base.html" %}
+{% block title %}Friends — td Puzzles{% endblock %}
+{% block content %}
+<div class="page-content">
+  <h1>Friends</h1>
+
+  <div id="auth-notice" style="display:none; text-align:center; padding:40px 0">
+    <p style="color:var(--ink-mid); margin-bottom:20px">Log in to add friends and compare scores.</p>
+    <a href="/login/" class="btn btn-primary">Log In</a>
+  </div>
+
+  <div id="friends-content" style="display:none">
+    <div class="friends-search">
+      <input class="form-input" type="text" id="search-input" placeholder="Search by name or email…">
+      <div id="search-results" class="search-results"></div>
+    </div>
+
+    <section id="requests-section" style="display:none; margin-top:28px">
+      <h2>Friend Requests</h2>
+      <div id="requests-list"></div>
+    </section>
+
+    <section style="margin-top:28px">
+      <h2>Your Friends</h2>
+      <div id="friends-list">
+        <p style="color:var(--ink-mid)">Loading…</p>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="{% static 'games/js/friends.js' %}"></script>
+{% endblock %}

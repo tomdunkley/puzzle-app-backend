@@ -1,0 +1,21 @@
+{% extends "games/base.html" %}
+{% block title %}Trophies — td Puzzles{% endblock %}
+{% block content %}
+<div class="page-content">
+  <h1>Trophies</h1>
+
+  <div id="auth-notice" style="display:none; text-align:center; padding:40px 0">
+    <p style="color:var(--ink-mid); margin-bottom:20px">Log in to view your trophies.</p>
+    <a href="/login/" class="btn btn-primary">Log In</a>
+  </div>
+
+  <div id="trophies-loading" class="state-panel"><p>Loading…</p></div>
+
+  <div id="trophies-error" class="alert alert-error" style="display:none"></div>
+
+  <div id="trophies-grid" class="trophies-grid" style="display:none"></div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="{% static 'games/js/trophies.js' %}"></script>
+{% endblock %}
