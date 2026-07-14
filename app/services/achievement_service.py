@@ -52,6 +52,30 @@ def reset_achievements(user_id: str) -> None:
     achievements_table.delete_item(Key={"user_id": user_id})
 
 
+CLAIMABLE_IN_GAME_ACHIEVEMENTS = frozenset({
+    "nice",
+    "massive",
+    "meta",
+    "queen",
+    "hippopotomonstrosesquippedaliophobia",
+})
+
+
+class AchievementNotClaimableError(Exception):
+    pass
+
+
+def claim_achievement(user_id: str, achievement_id: str) -> list[str]:
+    """Awards a single in-game achievement immediately. Only whitelisted IDs are accepted."""
+    if achievement_id not in CLAIMABLE_IN_GAME_ACHIEVEMENTS:
+        raise AchievementNotClaimableError(achievement_id)
+    already = get_unlocked(user_id)
+    if achievement_id in already:
+        return []
+    _award(user_id, [achievement_id])
+    return [achievement_id]
+
+
 def check_and_award_on_score(
     user_id: str,
     game: str,
