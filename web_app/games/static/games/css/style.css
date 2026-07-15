@@ -372,7 +372,7 @@ input, textarea, select { font-family: inherit; }
   aspect-ratio: 1;
   border: var(--border);
   background: var(--paper-2);
-  font-size: clamp(1rem, 3.5vw, 1.25rem);
+  font-size: clamp(0.85rem, 2.8vw, 1.1rem);
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -665,8 +665,9 @@ input, textarea, select { font-family: inherit; }
 .board {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
-  margin-bottom: 16px;
+  gap: 3px;
+  margin: 0 auto 16px;
+  max-width: 320px;
   user-select: none;
   touch-action: none;
 }

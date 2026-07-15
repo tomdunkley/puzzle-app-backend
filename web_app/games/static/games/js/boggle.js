@@ -21,11 +21,7 @@
   function saveProgress() {
     const key = storageKey();
     if (!key) return;
-    localStorage.setItem(key, JSON.stringify({
-      secondsLeft,
-      foundWords: [...foundWords],
-      paused,
-    }));
+    localStorage.setItem(key, JSON.stringify({ secondsLeft, foundWords: [...foundWords], paused }));
   }
 
   function loadProgress() {
@@ -49,16 +45,13 @@
     return `${m}:${String(s % 60).padStart(2,'0')}`;
   }
 
-  function updateTimer() {
-    document.getElementById('timer').textContent = fmtTime(secondsLeft);
-  }
-
   function startTimer() {
     clearInterval(timerInterval);
     timerInterval = setInterval(() => {
       if (paused) return;
       secondsLeft--;
-      updateTimer();
+      document.getElementById('timer').textContent = fmtTime(secondsLeft);
+      if (secondsLeft <= 30) document.getElementById('timer').classList.add('timer-urgent');
       saveProgress();
       if (secondsLeft <= 0) finish();
     }, 1000);
@@ -72,15 +65,38 @@
       cell.className = 'board-cell';
       cell.textContent = letter.toUpperCase();
       cell.dataset.idx = i;
-
-      cell.addEventListener('pointerdown', e => { e.preventDefault(); startSelect(i); });
-      cell.addEventListener('pointerenter', e => { if (isSelecting) addToSelect(i); });
       boardEl.appendChild(cell);
     });
-    document.addEventListener('pointerup', endSelect);
-  }
 
-  function cellEl(i) { return document.querySelector(`.board-cell[data-idx="${i}"]`); }
+    // Use pointermove + elementFromPoint so diagonals work on touch
+    boardEl.addEventListener('pointerdown', e => {
+      const cell = e.target.closest('.board-cell');
+      if (!cell) return;
+      e.preventDefault();
+      boardEl.setPointerCapture(e.pointerId);
+      startSelect(+cell.dataset.idx);
+    });
+
+    boardEl.addEventListener('pointermove', e => {
+      if (!isSelecting) return;
+      e.preventDefault();
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      if (!el || !el.classList.contains('board-cell')) return;
+      addToSelect(+el.dataset.idx);
+    });
+
+    boardEl.addEventListener('pointerup', e => {
+      e.preventDefault();
+      endSelect();
+    });
+
+    boardEl.addEventListener('pointercancel', () => {
+      isSelecting = false;
+      selectedCells = [];
+      selectedIndices = new Set();
+      renderSelection();
+    });
+  }
 
   function startSelect(i) {
     isSelecting = true;
@@ -91,13 +107,12 @@
 
   function addToSelect(i) {
     if (selectedIndices.has(i)) {
-      // backtrack
       const pos = selectedCells.indexOf(i);
       if (pos >= 0 && pos < selectedCells.length - 1) {
         selectedCells.slice(pos + 1).forEach(j => selectedIndices.delete(j));
         selectedCells = selectedCells.slice(0, pos + 1);
+        renderSelection();
       }
-      renderSelection();
       return;
     }
     const last = selectedCells[selectedCells.length - 1];
@@ -128,35 +143,15 @@
     isSelecting = false;
     const word = selectedCells.map(i => board[i]).join('').toLowerCase();
     if (word.length >= 3 && !foundWords.has(word)) {
-      submitWord(word);
+      foundWords.add(word);
+      renderFoundWords();
+      updateWordCount();
+      saveProgress();
     }
     selectedCells = [];
     selectedIndices = new Set();
     renderSelection();
     document.getElementById('current-word').textContent = '';
-  }
-
-  async function submitWord(word) {
-    try {
-      const res = await API.post(`v1/puzzles/${puzzle.puzzle_id}/words`, { word });
-      if (res.valid) {
-        foundWords.add(word);
-        renderFoundWords();
-        updateWordCount();
-        saveProgress();
-      } else {
-        flashCurrentWord('Not a word');
-      }
-    } catch (e) {
-      flashCurrentWord('Error');
-    }
-  }
-
-  function flashCurrentWord(msg) {
-    const el = document.getElementById('current-word');
-    el.textContent = msg;
-    el.classList.add('flash-error');
-    setTimeout(() => { el.classList.remove('flash-error'); el.textContent = ''; }, 1000);
   }
 
   function renderFoundWords() {
@@ -176,25 +171,37 @@
     clearInterval(timerInterval);
     gameOver = true;
     clearProgress();
-    const words = [...foundWords];
+
+    const durationUsed = (puzzle.duration_seconds || 180) - Math.max(0, secondsLeft);
+    const allWords = [...foundWords];
+    let validWords = null;
+
     try {
-      await API.post(`v1/scores`, {
+      const result = await API.post('v1/scores', {
         puzzle_id: puzzle.puzzle_id,
-        words,
+        duration_seconds: durationUsed,
+        words: allWords,
       });
+      validWords = result.valid_words || null;
     } catch (e) {
-      // score submission failure is non-fatal — still show results
+      // non-fatal — show results with attempted words
     }
-    showResults(words);
+
+    showResults(allWords, validWords);
   }
 
-  function showResults(words) {
+  function showResults(allWords, validWords) {
     show('state-results');
-    const score = calcScore(words);
+    const displayWords = validWords || allWords;
+    const score = calcScore(displayWords);
+    const invalid = validWords ? allWords.length - validWords.length : 0;
+
     document.getElementById('results-score').textContent = `${score} points`;
-    document.getElementById('results-words-label').textContent =
-      `${words.length} word${words.length !== 1 ? 's' : ''} found`;
-    const sorted = [...words].sort((a, b) => b.length - a.length || a.localeCompare(b));
+    let label = `${displayWords.length} word${displayWords.length !== 1 ? 's' : ''}`;
+    if (invalid > 0) label += ` · ${invalid} invalid`;
+    document.getElementById('results-words-label').textContent = label;
+
+    const sorted = [...displayWords].sort((a, b) => b.length - a.length || a.localeCompare(b));
     document.getElementById('results-words').innerHTML = sorted.map(w =>
       `<span class="word-chip">${API.escHtml(w.toUpperCase())} <span class="chip-score">+${wordScore(w)}</span></span>`
     ).join('');
@@ -227,39 +234,32 @@
     show('state-playing');
   });
 
-  document.getElementById('finish-early-btn').addEventListener('click', () => {
-    finish();
-  });
+  document.getElementById('finish-early-btn').addEventListener('click', finish);
 
   async function init() {
     try {
       await API.ensureSession();
       const data = await API.get('v1/puzzles/today?game=boggle');
       puzzle = data;
-      board = data.board.flat ? data.board.flat() : data.board;
-
-      // board may come as flat array or 2D — normalise to flat
-      if (Array.isArray(board[0])) board = board.flat();
-
-      const savedProgress = loadProgress();
+      board = Array.isArray(data.board[0]) ? data.board.flat() : data.board;
 
       if (data.already_played) {
         show('state-already-played');
-        const score = data.your_score || 0;
-        const words = [];
-        document.getElementById('already-score').textContent = `Score: ${score} points`;
+        document.getElementById('already-score').textContent =
+          `Score: ${data.your_score || 0} points`;
         return;
       }
 
-      if (savedProgress) {
-        foundWords = new Set(savedProgress.foundWords || []);
-        secondsLeft = savedProgress.secondsLeft ?? (data.duration_seconds || 180);
-        paused = savedProgress.paused || false;
+      const saved = loadProgress();
+      if (saved) {
+        foundWords = new Set(saved.foundWords || []);
+        secondsLeft = saved.secondsLeft ?? (data.duration_seconds || 180);
+        paused = saved.paused || false;
       } else {
         secondsLeft = data.duration_seconds || 180;
       }
 
-      updateTimer();
+      document.getElementById('timer').textContent = fmtTime(secondsLeft);
       show('state-playing');
       renderBoard();
       renderFoundWords();
