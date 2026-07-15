@@ -12,7 +12,7 @@ def _ctx():
 def home(request):
     return render(request, 'games/home.html', _ctx())
 
-def boggle(request):
+def words(request):
     return render(request, 'games/boggle.html', _ctx())
 
 def numbers(request):
