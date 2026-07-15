@@ -60,7 +60,7 @@ def main():
         dest = out / filename
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(response.content)
-        print(f'  {url}  →  web_dist/{filename}')
+        print(f'  {url}  ->  web_dist/{filename}')
 
     print('Copying static files...')
     shutil.copytree(static_src, out / 'static', dirs_exist_ok=True)
