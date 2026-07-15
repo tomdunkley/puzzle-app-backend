@@ -242,7 +242,7 @@
 
       if (data.already_played) {
         show('state-already-played');
-        const closest = data.my_closest ?? null;
+        const closest = data.your_result_value ?? null;
         document.getElementById('already-result').textContent =
           closest === target ? `You reached ${target}!` :
           closest ? `Closest: ${closest} (${Math.abs(closest - target)} away)` : '';

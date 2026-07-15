@@ -245,10 +245,9 @@
 
       if (data.already_played) {
         show('state-already-played');
-        const score = data.my_score || 0;
-        const words = data.my_words || [];
+        const score = data.your_score || 0;
+        const words = [];
         document.getElementById('already-score').textContent = `Score: ${score} points`;
-        document.getElementById('already-words').textContent = `${words.length} word${words.length !== 1 ? 's' : ''} found`;
         return;
       }
 

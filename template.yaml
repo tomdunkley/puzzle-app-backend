@@ -261,7 +261,63 @@ Resources:
         - AttributeName: user_id
           KeyType: HASH
 
+  WebBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "td-puzzles-web-${AWS::AccountId}"
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  WebBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Sub "arn:aws:s3:::${WebBucket}/*"
+
+  WebDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: td Puzzles web app
+        Enabled: true
+        HttpVersion: http2
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: S3WebOrigin
+            # Use the S3 website endpoint so directory /words/ -> words/index.html works
+            DomainName: !Select [1, !Split ["//", !GetAtt WebBucket.WebsiteURL]]
+            CustomOriginConfig:
+              HTTPPort: 80
+              OriginProtocolPolicy: http-only
+        DefaultCacheBehavior:
+          TargetOriginId: S3WebOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD]
+          Compress: true
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # AWS Managed CachingOptimized
+
 Outputs:
   ApiUrl:
     Description: Base URL of the deployed API
     Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+
+  WebUrl:
+    Description: CloudFront URL for the web app
+    Value: !Sub "https://${WebDistribution.DomainName}"
+
+  WebBucketName:
+    Description: S3 bucket for web deployment
+    Value: !Ref WebBucket

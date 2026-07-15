@@ -1,9 +1,17 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
 from app.routers import achievements, auth, dev, friends, games, health, puzzles, scores, users
 
 app = FastAPI(title="td Puzzles API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(health.router, prefix="/v1")
 app.include_router(achievements.router, prefix="/v1")
