@@ -14,15 +14,24 @@
 <body>
 <nav class="nav">
   <div class="nav-inner">
-    <a href="/" class="nav-brand">td Puzzles</a>
+    <a href="/" class="nav-brand" title="td Puzzles">
+      <div class="td-icon">
+        <svg width="22" height="16" viewBox="0 0 22 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="1" y="13" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif" font-size="13" font-weight="700" fill="white">td</text>
+        </svg>
+      </div>
+    </a>
     <div class="nav-links">
-      <a href="/words/" class="nav-link">Words</a>
-      <a href="/numbers/" class="nav-link">Numbers</a>
-      <a href="/leaderboard/" class="nav-link">Leaderboard</a>
-      <a href="/friends/" class="nav-link">Friends</a>
-      <a href="/trophies/" class="nav-link">Trophies</a>
+      <a href="/" class="nav-link" id="nav-puzzles-link">Puzzles</a>
+      <a href="/dev/" class="nav-link nav-dev" id="nav-dev-link" style="display:none">Dev</a>
     </div>
-    <div class="nav-auth" id="nav-auth"></div>
+    <a href="/profile/" class="nav-profile" id="nav-profile-link" title="Profile">
+      <!-- default: blank avatar -->
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="8" r="4" fill="#aaa"/>
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="#aaa"/>
+      </svg>
+    </a>
   </div>
 </nav>
 

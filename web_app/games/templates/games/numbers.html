@@ -4,26 +4,30 @@
 {% block content %}
 <div class="game-page">
   <div class="game-header">
-    <h1>Numbers</h1>
+    <h1 class="game-color-numbers">Numbers</h1>
     <div class="game-meta">
-      <span id="timer" class="timer">3:00</span>
+      <span id="timer" class="timer" style="display:none">3:00</span>
     </div>
   </div>
 
   <div id="state-loading" class="state-panel">
-    <p>Loading today's puzzle…</p>
+    <p style="color:var(--ink-mid)">Loading today's puzzle…</p>
   </div>
 
   <div id="state-already-played" class="state-panel" style="display:none">
-    <p class="alert alert-success">You've already played today's Numbers puzzle!</p>
-    <p id="already-result" style="font-size:1.1rem; color:var(--ink-mid); margin-bottom:16px"></p>
-    <a href="/leaderboard/" class="btn btn-secondary">View Leaderboard</a>
+    <div class="results-header">
+      <h2 id="already-headline"></h2>
+      <p id="already-result" style="color:var(--ink-mid); margin-top:4px; font-size:0.9rem"></p>
+    </div>
+    <div id="already-steps" class="numbers-solution" style="margin-top:12px"></div>
+    <div id="already-leaderboard" class="leaderboard-section"></div>
   </div>
 
   <div id="state-playing" style="display:none">
     <div class="numbers-target-wrap">
       <span class="numbers-target-label">Target</span>
       <span id="target" class="numbers-target"></span>
+      <div id="closest-display" class="closest-display"></div>
     </div>
 
     <div id="tiles" class="numbers-tiles"></div>
@@ -38,25 +42,32 @@
     </div>
 
     <div class="numbers-actions">
-      <button class="btn btn-ghost" id="undo-btn">Undo</button>
-      <button class="btn btn-ghost" id="reset-btn">Reset</button>
-      <button class="btn btn-primary" id="submit-btn" disabled>Submit</button>
+      <button class="btn btn-ghost btn-sm" id="reset-btn">Reset</button>
+      <button class="btn btn-primary btn-sm" id="submit-btn" disabled>Submit</button>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="pause-btn" style="margin-top:10px">Pause</button>
+  </div>
+
+  <div id="state-paused" class="state-panel" style="display:none">
+    <div class="pause-screen">
+      <h2>Paused</h2>
+      <p id="pause-closest"></p>
+      <button class="btn btn-primary" id="resume-btn">Resume</button>
+      <br><button class="btn btn-ghost" id="finish-early-btn" style="margin-top:10px">Finish</button>
     </div>
   </div>
 
   <div id="state-results" class="state-panel" style="display:none">
     <div class="results-header">
       <h2 id="results-headline"></h2>
-      <p id="results-sub" style="color:var(--ink-mid); margin:4px 0 20px; font-size:0.95rem"></p>
+      <p id="results-sub" style="color:var(--ink-mid); margin-top:4px; font-size:0.9rem"></p>
     </div>
-    <div id="results-steps" class="numbers-solution"></div>
-    <div id="solution-wrap" style="display:none; margin-top:20px">
-      <p style="font-size:0.8rem; color:var(--ink-mid); margin-bottom:8px; text-transform:uppercase; letter-spacing:.05em">Today's suggested solution</p>
+    <div id="results-steps" class="numbers-solution" style="margin-top:12px"></div>
+    <div id="solution-wrap" style="display:none; margin-top:16px">
+      <p style="font-size:0.76rem; color:var(--ink-mid); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em">Suggested solution</p>
       <div id="solution-steps" class="numbers-solution numbers-solution--muted"></div>
     </div>
-    <div style="margin-top:24px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center">
-      <a href="/leaderboard/" class="btn btn-secondary">Leaderboard</a>
-    </div>
+    <div id="results-leaderboard" class="leaderboard-section"></div>
   </div>
 
   <div id="state-error" class="state-panel" style="display:none">
@@ -65,5 +76,6 @@
 </div>
 {% endblock %}
 {% block extra_scripts %}
+<script src="{% static 'games/js/leaderboard.js' %}"></script>
 <script src="{% static 'games/js/numbers.js' %}"></script>
 {% endblock %}

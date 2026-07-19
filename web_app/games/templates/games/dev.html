@@ -1,0 +1,57 @@
+{% extends "games/base.html" %}
+{% load static %}
+{% block title %}Dev — td Puzzles{% endblock %}
+{% block content %}
+<div class="page-content">
+  <h1>Developer</h1>
+  <p class="page-subtitle">Admin panel. Only visible to developers.</p>
+
+  <div id="dev-loading" style="padding:40px 0; text-align:center; color:var(--ink-mid)">Checking access…</div>
+  <div id="dev-gate" style="display:none">
+    <p class="alert alert-error">Access denied. This page requires a developer account.</p>
+    <a href="/" class="btn btn-secondary">Go Home</a>
+  </div>
+  <div id="dev-content" style="display:none">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px">
+      <h2 style="font-size:1.1rem; font-weight:700">Users</h2>
+      <span id="dev-user-count" class="badge"></span>
+      <button class="btn btn-secondary btn-sm" id="dev-refresh-btn" style="margin-left:auto">Refresh</button>
+    </div>
+    <div id="dev-error" style="display:none">
+      <p class="alert alert-error" id="dev-error-msg"></p>
+    </div>
+    <div class="dev-table-wrap">
+      <table class="dev-table">
+        <thead>
+          <tr>
+            <th>Display Name</th>
+            <th>User ID</th>
+            <th>Email</th>
+            <th>Verified</th>
+            <th>Developer</th>
+            <th>Visible</th>
+            <th>Guest</th>
+            <th>Created</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="dev-users-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="dev-confirm-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:999; align-items:center; justify-content:center">
+  <div style="background:#fff; border-radius:10px; padding:24px; max-width:360px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+    <h3 style="margin-bottom:8px; font-size:1rem">Delete user?</h3>
+    <p id="dev-confirm-msg" style="font-size:0.88rem; color:var(--ink-mid); margin-bottom:20px"></p>
+    <div style="display:flex; gap:10px">
+      <button class="btn btn-danger btn-sm" id="dev-confirm-yes">Delete</button>
+      <button class="btn btn-ghost btn-sm" id="dev-confirm-no">Cancel</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="{% static 'games/js/dev.js' %}"></script>
+{% endblock %}

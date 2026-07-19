@@ -1,0 +1,121 @@
+{% extends "games/base.html" %}
+{% load static %}
+{% block title %}Profile — td Puzzles{% endblock %}
+{% block content %}
+<div class="profile-page">
+  <div id="profile-loading" style="padding:40px 0; text-align:center; color:var(--ink-mid)">Loading…</div>
+  <div id="profile-gate" style="display:none">
+    <div class="auth-gate">
+      <h2>Sign in to see your profile</h2>
+      <p>Create an account to save your scores, track streaks, and compete with friends.</p>
+      <div class="auth-gate-actions">
+        <a href="/login/" class="btn btn-primary">Sign In</a>
+        <a href="/register/" class="btn btn-secondary">Register</a>
+      </div>
+    </div>
+  </div>
+  <div id="profile-content" style="display:none">
+
+    <!-- Header -->
+    <div class="profile-header">
+      <div class="avatar-circle" id="profile-avatar"></div>
+      <div>
+        <div class="profile-name" id="profile-display-name"></div>
+        <div class="profile-sub" id="profile-sub"></div>
+      </div>
+    </div>
+
+    <!-- Today's scores -->
+    <div class="profile-section">
+      <div class="profile-section-title">Today's Scores</div>
+      <div id="profile-today-scores">
+        <div class="game-score-card game-score-card-words" id="words-score-card">
+          <h4>Words</h4>
+          <div class="game-score-today" id="words-today-score">Not played</div>
+          <div class="game-score-best" id="words-best-score"></div>
+        </div>
+        <div class="game-score-card game-score-card-numbers" id="numbers-score-card">
+          <h4>Numbers</h4>
+          <div class="game-score-today" id="numbers-today-score">Not played</div>
+          <div class="game-score-best" id="numbers-best-score"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trophies -->
+    <div class="profile-section">
+      <div class="profile-section-title">Trophies <span id="trophy-count-badge" class="badge"></span></div>
+      <div id="trophies-grid" class="trophy-grid"></div>
+      <div id="trophies-empty" class="empty-state" style="display:none; padding:16px 0">
+        <p>Play and complete challenges to unlock trophies.</p>
+      </div>
+    </div>
+
+    <!-- Friends -->
+    <div class="profile-section">
+      <div class="profile-section-title">Friends</div>
+      <div class="search-row">
+        <input type="text" class="form-input" id="friend-search" placeholder="Search by name or email…">
+        <button class="btn btn-secondary btn-sm" id="friend-search-btn">Search</button>
+      </div>
+      <div id="search-results"></div>
+      <div id="friend-requests-section" style="display:none">
+        <div class="section-label" style="margin-top:16px; margin-bottom:8px">Requests</div>
+        <div id="friend-requests-list"></div>
+      </div>
+      <div id="friends-list"></div>
+    </div>
+
+    <!-- Settings -->
+    <div class="profile-section">
+      <div class="profile-section-title">Account</div>
+      <div class="settings-row">
+        <div>
+          <label>Display name</label>
+          <span id="settings-display-name"></span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="edit-name-btn">Edit</button>
+      </div>
+      <div id="edit-name-form" style="display:none; padding:12px 0">
+        <div class="form-group">
+          <input type="text" class="form-input" id="new-display-name" placeholder="New display name">
+        </div>
+        <div id="edit-name-error" class="form-error" style="display:none"></div>
+        <button class="btn btn-primary btn-sm" id="save-name-btn">Save</button>
+        <button class="btn btn-ghost btn-sm" id="cancel-name-btn" style="margin-left:6px">Cancel</button>
+      </div>
+
+      <div class="settings-row">
+        <div>
+          <label>Visibility</label>
+          <span id="settings-visibility"></span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="toggle-visibility-btn">Toggle</button>
+      </div>
+
+      <div class="settings-row" id="change-password-row" style="display:none">
+        <div><label>Password</label></div>
+        <a href="/forgot-password/" class="btn btn-secondary btn-sm">Change</a>
+      </div>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="profile-section">
+      <div class="profile-section-title">Session</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap">
+        <button class="btn btn-secondary" id="logout-btn">Sign Out</button>
+        <button class="btn btn-danger btn-sm" id="delete-account-btn">Delete Account</button>
+      </div>
+      <div id="delete-confirm" style="display:none; margin-top:16px">
+        <p style="font-size:0.88rem; color:var(--error); margin-bottom:10px">This is permanent and cannot be undone.</p>
+        <button class="btn btn-danger btn-sm" id="delete-confirm-btn">Yes, delete my account</button>
+        <button class="btn btn-ghost btn-sm" id="delete-cancel-btn" style="margin-left:6px">Cancel</button>
+      </div>
+    </div>
+
+  </div><!-- /#profile-content -->
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="{% static 'games/js/profile.js' %}"></script>
+{% endblock %}

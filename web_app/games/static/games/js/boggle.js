@@ -13,6 +13,8 @@
   let secondsLeft = 0;
   let gameOver = false;
   let paused = false;
+  let wordSet = null;       // null = not loaded yet; Set once loaded
+  let myUserId = null;
 
   const STORAGE_KEY_PREFIX = 'td_boggle_progress_';
 
@@ -35,9 +37,22 @@
     if (key) localStorage.removeItem(key);
   }
 
+  async function loadDictionary() {
+    try {
+      const resp = await fetch(window.TD_DICT_URL);
+      const text = await resp.text();
+      wordSet = new Set(text.split('\n').map(w => w.trim().toLowerCase()).filter(Boolean));
+    } catch {
+      wordSet = null;
+    }
+  }
+
   function show(id) {
     ['state-loading','state-already-played','state-playing','state-paused','state-results','state-error']
       .forEach(s => { const el = document.getElementById(s); if (el) el.style.display = s === id ? '' : 'none'; });
+    // Show timer only during play
+    const timerEl = document.getElementById('timer');
+    if (timerEl) timerEl.style.display = id === 'state-playing' ? '' : 'none';
   }
 
   function fmtTime(s) {
@@ -68,7 +83,6 @@
       boardEl.appendChild(cell);
     });
 
-    // Use pointermove + elementFromPoint so diagonals work on touch
     boardEl.addEventListener('pointerdown', e => {
       const cell = e.target.closest('.board-cell');
       if (!cell) return;
@@ -82,7 +96,7 @@
       e.preventDefault();
       const el = document.elementFromPoint(e.clientX, e.clientY);
       if (!el || !el.classList.contains('board-cell')) return;
-      addToSelect(+el.dataset.idx);
+      addToSelect(+el.dataset.idx, e.clientX, e.clientY);
     });
 
     boardEl.addEventListener('pointerup', e => {
@@ -105,12 +119,21 @@
     renderSelection();
   }
 
-  function addToSelect(i) {
+  function addToSelect(i, clientX, clientY) {
+    const cellEl = document.querySelector(`.board-cell[data-idx="${i}"]`);
+    if (cellEl) {
+      const rect = cellEl.getBoundingClientRect();
+      const dx = clientX - (rect.left + rect.width / 2);
+      const dy = clientY - (rect.top + rect.height / 2);
+      if (Math.sqrt(dx * dx + dy * dy) > rect.width * 0.4) return;
+    }
+
     if (selectedIndices.has(i)) {
-      const pos = selectedCells.indexOf(i);
-      if (pos >= 0 && pos < selectedCells.length - 1) {
-        selectedCells.slice(pos + 1).forEach(j => selectedIndices.delete(j));
-        selectedCells = selectedCells.slice(0, pos + 1);
+      const prev = selectedCells[selectedCells.length - 2];
+      if (i === prev) {
+        const last = selectedCells[selectedCells.length - 1];
+        selectedIndices.delete(last);
+        selectedCells.pop();
         renderSelection();
       }
       return;
@@ -138,20 +161,34 @@
     document.getElementById('current-word').textContent = word;
   }
 
+  function flashWord(msg) {
+    const el = document.getElementById('current-word');
+    el.textContent = msg;
+    el.classList.add('flash-error');
+    setTimeout(() => { el.classList.remove('flash-error'); el.textContent = ''; }, 900);
+  }
+
   function endSelect() {
     if (!isSelecting) return;
     isSelecting = false;
     const word = selectedCells.map(i => board[i]).join('').toLowerCase();
-    if (word.length >= 3 && !foundWords.has(word)) {
+
+    if (word.length < 4) {
+      if (word.length >= 2) flashWord('Too short');
+    } else if (foundWords.has(word)) {
+      flashWord('Already found');
+    } else if (wordSet !== null && !wordSet.has(word)) {
+      flashWord('Not a word');
+    } else {
       foundWords.add(word);
       renderFoundWords();
       updateWordCount();
       saveProgress();
     }
+
     selectedCells = [];
     selectedIndices = new Set();
     renderSelection();
-    document.getElementById('current-word').textContent = '';
   }
 
   function renderFoundWords() {
@@ -174,23 +211,20 @@
 
     const durationUsed = (puzzle.duration_seconds || 180) - Math.max(0, secondsLeft);
     const allWords = [...foundWords];
-    let validWords = null;
+    let result = null;
 
     try {
-      const result = await API.post('v1/scores', {
+      result = await API.post('v1/scores', {
         puzzle_id: puzzle.puzzle_id,
         duration_seconds: durationUsed,
         words: allWords,
       });
-      validWords = result.valid_words || null;
-    } catch (e) {
-      // non-fatal — show results with attempted words
-    }
+    } catch (_) { /* non-fatal */ }
 
-    showResults(allWords, validWords);
+    showResults(allWords, result ? result.valid_words : null, puzzle.puzzle_id);
   }
 
-  function showResults(allWords, validWords) {
+  async function showResults(allWords, validWords, puzzleId) {
     show('state-results');
     const displayWords = validWords || allWords;
     const score = calcScore(displayWords);
@@ -205,12 +239,10 @@
     document.getElementById('results-words').innerHTML = sorted.map(w =>
       `<span class="word-chip">${API.escHtml(w.toUpperCase())} <span class="chip-score">+${wordScore(w)}</span></span>`
     ).join('');
-  }
 
-  function setupShareBtn() {
+    // Share button
     document.getElementById('share-btn').addEventListener('click', () => {
-      const score = calcScore([...foundWords]);
-      const text = `td Puzzles — Words\nScore: ${score} (${foundWords.size} words)`;
+      const text = `td Puzzles — Words\nScore: ${score} (${displayWords.length} words)`;
       if (navigator.clipboard) {
         navigator.clipboard.writeText(text).then(() => {
           const msg = document.getElementById('share-msg');
@@ -219,6 +251,49 @@
         });
       }
     });
+
+    // Leaderboards
+    if (puzzleId) {
+      await Leaderboard.render(
+        document.getElementById('results-leaderboard'),
+        puzzleId,
+        e => `${e.score} pts`,
+        myUserId,
+      );
+    }
+  }
+
+  async function showAlreadyPlayed(data) {
+    show('state-already-played');
+    const score = data.your_score || 0;
+    document.getElementById('already-score').textContent = `${score} points`;
+
+    // Try to load the valid_words from score detail
+    let validWords = null;
+    if (myUserId && data.puzzle_id) {
+      try {
+        const detail = await API.get(`v1/scores/${data.puzzle_id}/${myUserId}`);
+        validWords = detail.valid_words || null;
+        const wc = validWords ? validWords.length : 0;
+        document.getElementById('already-words-label').textContent = `${wc} word${wc !== 1 ? 's' : ''}`;
+        if (validWords) {
+          const sorted = [...validWords].sort((a, b) => b.length - a.length || a.localeCompare(b));
+          document.getElementById('already-words').innerHTML = sorted.map(w =>
+            `<span class="word-chip">${API.escHtml(w.toUpperCase())} <span class="chip-score">+${wordScore(w)}</span></span>`
+          ).join('');
+        }
+      } catch (_) { /* fallback: no words shown */ }
+    }
+
+    // Leaderboards
+    if (data.puzzle_id) {
+      await Leaderboard.render(
+        document.getElementById('already-leaderboard'),
+        data.puzzle_id,
+        e => `${e.score} pts`,
+        myUserId,
+      );
+    }
   }
 
   document.getElementById('pause-btn').addEventListener('click', () => {
@@ -239,14 +314,22 @@
   async function init() {
     try {
       await API.ensureSession();
+      loadDictionary();
+
+      // Get own user ID for leaderboard highlighting
+      if (API.isLoggedIn()) {
+        try {
+          const me = await API.get('v1/users/me');
+          myUserId = me.user_id;
+        } catch (_) { /* guest */ }
+      }
+
       const data = await API.get('v1/puzzles/today?game=boggle');
       puzzle = data;
       board = Array.isArray(data.board[0]) ? data.board.flat() : data.board;
 
       if (data.already_played) {
-        show('state-already-played');
-        document.getElementById('already-score').textContent =
-          `Score: ${data.your_score || 0} points`;
+        await showAlreadyPlayed(data);
         return;
       }
 
@@ -264,8 +347,13 @@
       renderBoard();
       renderFoundWords();
       updateWordCount();
-      setupShareBtn();
       startTimer();
+
+      if (paused) {
+        const score = calcScore([...foundWords]);
+        document.getElementById('pause-score').textContent = `${score} pts · ${foundWords.size} words`;
+        show('state-paused');
+      }
     } catch (e) {
       show('state-error');
       document.getElementById('error-msg').textContent = e.message || 'Failed to load puzzle.';
@@ -274,6 +362,9 @@
 
   document.addEventListener('DOMContentLoaded', init);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && !gameOver) saveProgress();
+    if (document.visibilityState === 'hidden' && !gameOver) {
+      paused = true;
+      saveProgress();
+    }
   });
 })();

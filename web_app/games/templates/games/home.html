@@ -1,21 +1,30 @@
 {% extends "games/base.html" %}
 {% block title %}td Puzzles{% endblock %}
 {% block content %}
-<div class="home-hero">
-  <h1>td Puzzles</h1>
-  <p>Two daily puzzles. Play without an account, or sign in to track your scores and compete with friends.</p>
+<div class="home-intro">
+  <div class="td-icon">
+    <svg width="22" height="16" viewBox="0 0 22 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <text x="1" y="13" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif" font-size="13" font-weight="700" fill="white">td</text>
+    </svg>
+  </div>
+  <div>
+    <h1>td Puzzles</h1>
+    <p>A new puzzle every day. Sign in to track your progress.</p>
+  </div>
 </div>
 
 <div class="game-cards">
-  <a href="/words/" class="game-card">
-    <h2>Words</h2>
-    <p>Find as many words as you can in the 5×5 letter grid before time runs out.</p>
-    <span class="game-card-cta">Play today's puzzle →</span>
+  <a href="/words/" class="game-card game-card-words">
+    <div class="game-card-label">Words</div>
+    <h2>Daily Words</h2>
+    <p>Find as many words as you can from a 5×5 letter grid in 3 minutes.</p>
+    <div class="game-card-cta">Play today's puzzle →</div>
   </a>
-  <a href="/numbers/" class="game-card">
-    <h2>Numbers</h2>
-    <p>Combine six numbers using arithmetic to reach the target value.</p>
-    <span class="game-card-cta">Play today's puzzle →</span>
+  <a href="/numbers/" class="game-card game-card-numbers">
+    <div class="game-card-label">Numbers</div>
+    <h2>Daily Numbers</h2>
+    <p>Combine six numbers using arithmetic to reach the target in 3 minutes.</p>
+    <div class="game-card-cta">Play today's puzzle →</div>
   </a>
 </div>
 {% endblock %}

@@ -1,93 +1,78 @@
-(() => {
-  let activeTab = 'boggle';
+'use strict';
 
-  function show(tabId) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
-    document.getElementById('tab-boggle').style.display = tabId === 'boggle' ? '' : 'none';
-    document.getElementById('tab-numbers').style.display = tabId === 'numbers' ? '' : 'none';
-    activeTab = tabId;
-  }
+// Shared leaderboard rendering helper used by boggle.js and numbers.js.
+const Leaderboard = (() => {
 
-  document.querySelectorAll('.tab').forEach(t => {
-    t.addEventListener('click', () => show(t.dataset.tab));
-  });
+    // Render friends + global leaderboard tabs into `containerEl` for the given puzzleId.
+    // `formatScore` is a function(entry) -> string for the score column.
+    // `myUserId` is the logged-in user's ID (or null).
+    async function render(containerEl, puzzleId, formatScore, myUserId) {
+        if (!API.isLoggedIn()) {
+            containerEl.innerHTML = `
+                <div class="lb-auth-gate">
+                    <a href="/login/">Sign in</a> to see how you rank against friends.
+                </div>`;
+            return;
+        }
 
-  function renderBoggleRow(entry, rank, selfId) {
-    const isSelf = entry.user_id === selfId;
-    return `<tr class="${isSelf ? 'self-row' : ''}">
-      <td>${rank}</td>
-      <td>${API.escHtml(entry.display_name)}${isSelf ? ' <span class="you-badge">you</span>' : ''}</td>
-      <td>${entry.score}</td>
-      <td>${entry.word_count ?? '—'}</td>
-    </tr>`;
-  }
+        containerEl.innerHTML = `
+            <div class="lb-tabs">
+                <button class="lb-tab active" data-tab="friends">Friends</button>
+                <button class="lb-tab" data-tab="global">Global</button>
+            </div>
+            <div id="lb-panel-friends"></div>
+            <div id="lb-panel-global" style="display:none"></div>`;
 
-  function renderNumbersRow(entry, rank, selfId) {
-    const isSelf = entry.user_id === selfId;
-    const closest = entry.closest_value;
-    const tgt = entry.target;
-    const result = closest === tgt ? `${closest} ✓` : `${closest} (${Math.abs(closest - tgt)} away)`;
-    return `<tr class="${isSelf ? 'self-row' : ''}">
-      <td>${rank}</td>
-      <td>${API.escHtml(entry.display_name)}${isSelf ? ' <span class="you-badge">you</span>' : ''}</td>
-      <td>${result}</td>
-      <td>${entry.step_count ?? '—'}</td>
-    </tr>`;
-  }
+        const friendsPanel = containerEl.querySelector('#lb-panel-friends');
+        const globalPanel  = containerEl.querySelector('#lb-panel-global');
 
-  async function loadLeaderboard(game) {
-    const loadingEl = document.getElementById(`${game}-loading`);
-    const errorEl = document.getElementById(`${game}-error`);
-    const tableEl = document.getElementById(`${game}-table`);
-    const tbodyEl = document.getElementById(`${game}-tbody`);
-    const emptyEl = document.getElementById(`${game}-empty`);
+        containerEl.querySelectorAll('.lb-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                containerEl.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                friendsPanel.style.display = tab.dataset.tab === 'friends' ? '' : 'none';
+                globalPanel.style.display  = tab.dataset.tab === 'global'  ? '' : 'none';
+            });
+        });
 
-    loadingEl.style.display = '';
-    errorEl.style.display = 'none';
-    tableEl.style.display = 'none';
-    emptyEl.style.display = 'none';
+        // Load both in parallel
+        const [friendsData, globalData] = await Promise.allSettled([
+            API.get(`v1/leaderboards/${puzzleId}`),
+            API.get(`v1/leaderboards/${puzzleId}/global`),
+        ]);
 
-    try {
-      const puzzleData = await API.get(`v1/puzzles/today?game=${game}`);
-      const puzzleId = puzzleData.puzzle_id;
-
-      const lb = await API.get(`v1/leaderboards/${puzzleId}`);
-      loadingEl.style.display = 'none';
-
-      const selfId = lb.user_id;
-      const entries = lb.entries || [];
-
-      if (entries.length === 0) {
-        emptyEl.style.display = '';
-        return;
-      }
-
-      tableEl.style.display = '';
-      if (game === 'boggle') {
-        tbodyEl.innerHTML = entries.map((e, i) => renderBoggleRow(e, i + 1, selfId)).join('');
-      } else {
-        tbodyEl.innerHTML = entries.map((e, i) => renderNumbersRow(e, i + 1, selfId)).join('');
-      }
-    } catch (e) {
-      loadingEl.style.display = 'none';
-      errorEl.style.display = '';
-      errorEl.textContent = e.message || 'Failed to load leaderboard.';
+        renderPanel(friendsPanel, friendsData.status === 'fulfilled' ? friendsData.value : [], myUserId, formatScore, 'friends');
+        renderPanel(globalPanel,  globalData.status  === 'fulfilled' ? globalData.value  : [], myUserId, formatScore, 'global');
     }
-  }
 
-  async function init() {
-    if (!API.isLoggedIn()) {
-      document.getElementById('auth-notice').style.display = '';
-      document.getElementById('tab-boggle').style.display = 'none';
-      document.getElementById('tab-numbers').style.display = 'none';
-      document.querySelector('.tab-bar').style.display = 'none';
-      return;
+    function renderPanel(panel, entries, myUserId, formatScore, scope) {
+        if (!entries || !entries.entries || entries.entries.length === 0) {
+            panel.innerHTML = `<div class="empty-state" style="padding:20px 0">
+                <p>${scope === 'friends' ? 'Add friends to see them here.' : 'No scores yet.'}</p>
+            </div>`;
+            return;
+        }
+        const rows = entries.entries.map((e, i) => {
+            const isSelf = e.user_id === myUserId;
+            const name = API.escHtml(e.display_name || 'Unknown');
+            const youBadge = isSelf ? '<span class="you-badge">you</span>' : '';
+            const profileUrl = `/users/${API.escHtml(e.user_id)}/`;
+            return `<tr class="${isSelf ? 'self-row' : ''}">
+                <td class="rank-col">${i + 1}</td>
+                <td><a href="${profileUrl}" style="text-decoration:none;color:inherit">${name}</a>${youBadge}</td>
+                <td class="score-col">${API.escHtml(String(formatScore(e)))}</td>
+            </tr>`;
+        }).join('');
+        panel.innerHTML = `
+            <table class="lb-table">
+                <thead><tr>
+                    <th class="rank-col">#</th>
+                    <th>Player</th>
+                    <th class="score-col">Score</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
     }
-    await Promise.all([loadLeaderboard('boggle'), loadLeaderboard('numbers')]);
-    show('boggle');
-  }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    API.ensureSession().then(init);
-  });
+    return { render };
 })();

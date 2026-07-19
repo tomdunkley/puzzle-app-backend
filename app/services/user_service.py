@@ -314,7 +314,11 @@ def get_email_verified(user_id: str) -> bool:
 
 def is_developer(user_id: str) -> bool:
     user = get_user(user_id)
-    email = (user or {}).get("email")
+    if not user:
+        return False
+    if user.get("is_developer"):
+        return True
+    email = user.get("email")
     return bool(email) and email.strip().lower() in settings.developer_emails
 
 
@@ -395,3 +399,40 @@ def delete_account(user_id: str) -> None:
 
     # User row last so auth still works if anything above fails mid-way
     users_table.delete_item(Key={"user_id": user_id})
+
+
+def list_all_users() -> list[dict]:
+    """Full table scan of all users (developer admin use only)."""
+    items = []
+    response = users_table.scan()
+    items.extend(response.get("Items", []))
+    while "LastEvaluatedKey" in response:
+        response = users_table.scan(ExclusiveStartKey=response["LastEvaluatedKey"])
+        items.extend(response.get("Items", []))
+    items.sort(key=lambda u: u.get("created_at", ""), reverse=True)
+    return items
+
+
+def admin_update_user(
+    user_id: str,
+    email_verified: bool | None = None,
+    is_developer_flag: bool | None = None,
+    visible_on_global_leaderboard: bool | None = None,
+) -> dict | None:
+    updates: dict = {}
+    if email_verified is not None:
+        updates["email_verified"] = email_verified
+    if is_developer_flag is not None:
+        updates["is_developer"] = is_developer_flag
+    if visible_on_global_leaderboard is not None:
+        updates["visible_on_global_leaderboard"] = visible_on_global_leaderboard
+    if not updates:
+        return get_user(user_id)
+    set_clause = ", ".join(f"#{key} = :{key}" for key in updates)
+    users_table.update_item(
+        Key={"user_id": user_id},
+        UpdateExpression=f"SET {set_clause}",
+        ExpressionAttributeNames={f"#{key}": key for key in updates},
+        ExpressionAttributeValues={f":{key}": value for key, value in updates.items()},
+    )
+    return get_user(user_id)

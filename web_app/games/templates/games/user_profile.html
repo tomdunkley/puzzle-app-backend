@@ -1,0 +1,50 @@
+{% extends "games/base.html" %}
+{% load static %}
+{% block title %}Profile — td Puzzles{% endblock %}
+{% block content %}
+<div class="user-profile-page">
+  <div id="up-loading" style="padding:40px 0; text-align:center; color:var(--ink-mid)">Loading…</div>
+  <div id="up-error" style="display:none">
+    <p class="alert alert-error" id="up-error-msg"></p>
+  </div>
+  <div id="up-content" style="display:none">
+    <div class="profile-header">
+      <div class="avatar-circle" id="up-avatar"></div>
+      <div>
+        <div class="profile-name" id="up-display-name"></div>
+        <div class="profile-sub" id="up-sub"></div>
+      </div>
+    </div>
+
+    <div id="up-friend-action" style="margin-bottom:24px"></div>
+
+    <!-- Today's scores -->
+    <div class="profile-section">
+      <div class="profile-section-title">Today's Scores</div>
+      <div class="game-score-card game-score-card-words">
+        <h4>Words</h4>
+        <div class="game-score-today" id="up-words-today">Not played</div>
+        <div class="game-score-best" id="up-words-best"></div>
+      </div>
+      <div class="game-score-card game-score-card-numbers" style="margin-top:10px">
+        <h4>Numbers</h4>
+        <div class="game-score-today" id="up-numbers-today">Not played</div>
+        <div class="game-score-best" id="up-numbers-best"></div>
+      </div>
+    </div>
+
+    <!-- Trophies -->
+    <div class="profile-section">
+      <div class="profile-section-title">Trophies <span id="up-trophy-badge" class="badge"></span></div>
+      <div id="up-trophy-grid" class="trophy-grid"></div>
+      <div id="up-trophy-empty" class="empty-state" style="display:none; padding:16px 0">
+        <p>No trophies yet.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>window.UP_USER_ID = "{{ profile_user_id }}";</script>
+{% endblock %}
+{% block extra_scripts %}
+<script src="{% static 'games/js/user_profile.js' %}"></script>
+{% endblock %}
