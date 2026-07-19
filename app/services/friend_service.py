@@ -135,6 +135,8 @@ def _friendship_status(requesting_user_id: str, candidate_user_id: str) -> str:
 
 
 def get_friendship_status(requesting_user_id: str, candidate_user_id: str) -> str:
+    if requesting_user_id == candidate_user_id:
+        return "self"
     return _friendship_status(requesting_user_id, candidate_user_id)
 
 
