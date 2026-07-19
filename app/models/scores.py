@@ -27,6 +27,7 @@ class ScoreSubmissionResult(BaseModel):
     daily_best_distance: int | None = None  # numbers: best (lowest) distance across all daily puzzles
     daily_best_result_value: int | None = None  # numbers
     daily_best_duration_seconds: int | None = None  # numbers: time taken for best score (relevant when distance==0)
+    is_new_daily_best: bool = False
 
 
 class LeaderboardEntry(BaseModel):

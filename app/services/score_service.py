@@ -66,7 +66,7 @@ def submit_score(
     existing = scores_table.get_item(Key={"puzzle_id": puzzle_id, "user_id": user_id}).get("Item")
     candidate = {**new_fields, "duration_seconds": duration_seconds}
     if existing is not None and _ranking_key(existing) >= _ranking_key(candidate):
-        return {**existing, "current_streak": _current_streak(user_id, game)}
+        return {**existing, "current_streak": _current_streak(user_id, game), "is_new_daily_best": False}
 
     # Guests never accrue a streak -- they have no persistent identity to track one
     # against, and a claimed guest score gets its streak applied separately, once,
@@ -91,7 +91,7 @@ def submit_score(
     if is_guest and user is not None and "guest_expires_at_epoch" in user:
         item["guest_expires_at_epoch"] = user["guest_expires_at_epoch"]
     scores_table.put_item(Item=item)
-    return {**item, "current_streak": _current_streak(user_id, game)}
+    return {**item, "current_streak": _current_streak(user_id, game), "is_new_daily_best": True}
 
 
 def _current_streak(user_id: str, game: str) -> int:
