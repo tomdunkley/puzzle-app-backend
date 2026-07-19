@@ -66,6 +66,7 @@ def post_score(submission: ScoreSubmission, user_id: str = Depends(get_verified_
         daily_best_word_count=len(daily_best.get("valid_words") or []) if daily_best else None,
         daily_best_distance=daily_best.get("distance") if daily_best else None,
         daily_best_result_value=daily_best.get("result_value") if daily_best else None,
+        daily_best_duration_seconds=daily_best.get("duration_seconds") if daily_best else None,
     )
 
 
