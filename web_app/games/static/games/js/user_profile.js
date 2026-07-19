@@ -1,7 +1,9 @@
 'use strict';
 
 (() => {
-  const userId = window.UP_USER_ID;
+  // Try template-injected ID first (Django-served), fall back to URL path (static build)
+  const userId = window.UP_USER_ID ||
+    (window.location.pathname.match(/\/users\/([^/]+)\//) || [])[1];
 
   function fmtScore(game, today) {
     if (!today) return 'Not played today';

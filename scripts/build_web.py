@@ -24,13 +24,14 @@ PAGES = {
     '/':                 'index.html',
     '/words/':           'words/index.html',
     '/numbers/':         'numbers/index.html',
-    '/leaderboard/':     'leaderboard/index.html',
-    '/friends/':         'friends/index.html',
-    '/trophies/':        'trophies/index.html',
+    '/profile/':         'profile/index.html',
+    '/dev/':             'dev/index.html',
     '/login/':           'login/index.html',
     '/register/':        'register/index.html',
     '/forgot-password/': 'forgot-password/index.html',
     '/verify-email/':    'verify-email/index.html',
+    # /users/<id>/ served by CloudFront rewrite to users/index.html
+    '/users/placeholder/': 'users/index.html',
 }
 
 
