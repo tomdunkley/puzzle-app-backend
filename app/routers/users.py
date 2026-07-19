@@ -1,7 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 
 from app.auth.dependency import get_current_user_id
-from app.models.users import UpdateProfileRequest, UserProfile
+from app.data.achievements import ACHIEVEMENTS
+from app.models.users import (
+    DailyBestScore,
+    PublicUserProfile,
+    TodayGameScore,
+    UpdateProfileRequest,
+    UserProfile,
+)
+from app.services.achievement_service import get_unlocked
+from app.services.friend_service import get_friendship_status
+from app.services.score_service import get_daily_best, get_today_score_for_user
 from app.services.auth_service import DisplayNameTakenError
 from app.services.user_service import (
     InvalidAvatarColorIdError,
@@ -69,3 +79,53 @@ def update_my_profile(body: UpdateProfileRequest, user_id: str = Depends(get_cur
 def delete_my_account(user_id: str = Depends(get_current_user_id)):
     delete_account(user_id)
     return Response(status_code=204)
+
+
+def _today_score(user_id: str, game: str) -> TodayGameScore | None:
+    item = get_today_score_for_user(user_id, game)
+    if item is None:
+        return None
+    if game == "numbers":
+        return TodayGameScore(game=game, result_value=item.get("result_value"), distance=item.get("distance"))
+    return TodayGameScore(game=game, score=item.get("score"), word_count=len(item.get("valid_words") or []))
+
+
+def _daily_best_score(user_id: str, game: str) -> DailyBestScore | None:
+    item = get_daily_best(user_id, game)
+    if item is None:
+        return None
+    if game == "numbers":
+        return DailyBestScore(
+            game=game,
+            result_value=item.get("result_value"),
+            distance=item.get("distance"),
+            puzzle_id=item["puzzle_id"],
+        )
+    return DailyBestScore(
+        game=game,
+        score=item.get("score"),
+        word_count=len(item.get("valid_words") or []),
+        puzzle_id=item["puzzle_id"],
+    )
+
+
+@router.get("/users/{user_id}/profile", response_model=PublicUserProfile)
+def get_user_profile(user_id: str, requesting_user_id: str = Depends(get_current_user_id)):
+    user = get_user(user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="user not found")
+    unlocked = get_unlocked(user_id)
+    return PublicUserProfile(
+        user_id=user_id,
+        display_name=user["display_name"],
+        avatar_id=user.get("avatar_id"),
+        avatar_color_id=user.get("avatar_color_id"),
+        avatar_icon_color=user.get("avatar_icon_color"),
+        friendship_status=get_friendship_status(requesting_user_id, user_id),
+        today_boggle=_today_score(user_id, "boggle"),
+        today_numbers=_today_score(user_id, "numbers"),
+        boggle_daily_best=_daily_best_score(user_id, "boggle"),
+        numbers_daily_best=_daily_best_score(user_id, "numbers"),
+        trophy_count=len(unlocked),
+        total_trophies=len(ACHIEVEMENTS),
+    )

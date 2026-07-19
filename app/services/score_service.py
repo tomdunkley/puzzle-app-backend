@@ -115,12 +115,41 @@ def get_user_score_item(puzzle_id: str, user_id: str) -> dict | None:
     return scores_table.get_item(Key={"puzzle_id": puzzle_id, "user_id": user_id}).get("Item")
 
 
+def get_daily_scores_for_user(user_id: str, game: str) -> list[dict]:
+    """All daily (not unlimited) puzzle scores for a user for a given game."""
+    unlimited_prefix = f"{game}_unlimited_"
+    response = scores_table.query(
+        IndexName="byUserId",
+        KeyConditionExpression="user_id = :uid AND begins_with(puzzle_id, :prefix)",
+        ExpressionAttributeValues={":uid": user_id, ":prefix": f"{game}_"},
+    )
+    return [item for item in response.get("Items", []) if not item["puzzle_id"].startswith(unlimited_prefix)]
+
+
+def get_daily_best(user_id: str, game: str) -> dict | None:
+    """The user's best daily score for a game (None if never played)."""
+    scores = get_daily_scores_for_user(user_id, game)
+    if not scores:
+        return None
+    return max(scores, key=_ranking_key)
+
+
+def get_today_score_for_user(user_id: str, game: str) -> dict | None:
+    """The user's score for today's daily puzzle (None if not played today)."""
+    today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return get_user_score_item(f"{game}_{today_iso}", user_id)
+
+
 def has_played(puzzle_id: str, user_id: str) -> bool:
     return get_user_score_item(puzzle_id, user_id) is not None
 
 
 def _counts_toward_global_rank(user: dict | None) -> bool:
-    return user is None or user.get("visible_on_global_leaderboard", True)
+    if user is None:
+        return True
+    if user.get("is_test_account"):
+        return False
+    return user.get("visible_on_global_leaderboard", True)
 
 
 def get_rank(puzzle_id: str, user_id: str) -> int | None:
@@ -218,9 +247,11 @@ def get_leaderboard(puzzle_id: str, user_ids: set[str] | None = None) -> list[di
     scores = _all_scores_for_puzzle(puzzle_id)
     if user_ids is not None:
         scores = [item for item in scores if item["user_id"] in user_ids]
+    users = {item["user_id"]: get_user(item["user_id"]) for item in scores}
+    scores = [s for s in scores if not (users[s["user_id"]] or {}).get("is_test_account")]
     scores.sort(key=_ranking_key, reverse=True)
     return [
-        _leaderboard_entry(rank, item, get_user(item["user_id"]))
+        _leaderboard_entry(rank, item, users[item["user_id"]])
         for rank, item in enumerate(scores, start=1)
     ]
 
@@ -238,7 +269,7 @@ def get_global_leaderboard(puzzle_id: str, limit: int = 10) -> list[dict]:
     entries = []
     for item in scores:
         user = get_user(item["user_id"])
-        if user is not None and (user.get("is_guest") or not user.get("visible_on_global_leaderboard", True)):
+        if user is not None and (user.get("is_guest") or not user.get("visible_on_global_leaderboard", True) or user.get("is_test_account")):
             continue
         entries.append(_leaderboard_entry(len(entries) + 1, item, user))
         if len(entries) >= limit:

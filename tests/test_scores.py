@@ -181,12 +181,12 @@ def test_leaderboard_breaks_score_ties_by_word_count(client, auth_headers):
 
 def test_leaderboard_includes_avatar_id(client, auth_headers, seed_puzzle):
     tom = auth_headers("Tom")
-    client.patch("/v1/users/me", json={"avatar_id": "dice"}, headers=tom)
+    client.patch("/v1/users/me", json={"avatar_id": "words"}, headers=tom)
     puzzle_id = seed_puzzle("boggle_2026-01-09", word="CATS")
     client.post("/v1/scores", json={"puzzle_id": puzzle_id, "words": ["cats"], "duration_seconds": 60}, headers=tom)
 
     leaderboard = client.get(f"/v1/leaderboards/{puzzle_id}", headers=tom).json()
-    assert leaderboard["entries"][0]["avatar_id"] == "dice"
+    assert leaderboard["entries"][0]["avatar_id"] == "words"
 
 
 def test_leaderboard_includes_avatar_color_id(client, auth_headers, seed_puzzle):

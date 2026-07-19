@@ -94,6 +94,16 @@ def dynamodb_tables():
                 {"AttributeName": "puzzle_id", "KeyType": "HASH"},
                 {"AttributeName": "user_id", "KeyType": "RANGE"},
             ],
+            GlobalSecondaryIndexes=[
+                {
+                    "IndexName": "byUserId",
+                    "KeySchema": [
+                        {"AttributeName": "user_id", "KeyType": "HASH"},
+                        {"AttributeName": "puzzle_id", "KeyType": "RANGE"},
+                    ],
+                    "Projection": {"ProjectionType": "ALL"},
+                }
+            ],
             BillingMode="PAY_PER_REQUEST",
         )
         client.create_table(

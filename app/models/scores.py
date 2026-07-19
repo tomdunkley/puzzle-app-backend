@@ -22,6 +22,10 @@ class ScoreSubmissionResult(BaseModel):
     distance: int | None = None  # numbers
     steps: list[NumbersStep] | None = None  # numbers
     newly_unlocked: list[str] = []  # achievement IDs unlocked by this submission
+    daily_best_score: int | None = None  # boggle: best score across all daily puzzles
+    daily_best_word_count: int | None = None  # boggle
+    daily_best_distance: int | None = None  # numbers: best (lowest) distance across all daily puzzles
+    daily_best_result_value: int | None = None  # numbers
 
 
 class LeaderboardEntry(BaseModel):

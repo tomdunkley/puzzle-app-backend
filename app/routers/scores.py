@@ -8,6 +8,7 @@ from app.services.numbers_game import InvalidNumbersAttemptError
 from app.services.score_service import (
     PuzzleNotFoundError,
     ScoreNotFoundError,
+    get_daily_best,
     get_global_leaderboard,
     get_leaderboard,
     get_rank,
@@ -36,6 +37,7 @@ def post_score(submission: ScoreSubmission, user_id: str = Depends(get_verified_
 
     rank = get_rank(submission.puzzle_id, user_id)
     game = submission.puzzle_id.split("_")[0]
+    is_daily = not submission.puzzle_id.startswith(f"{game}_unlimited_")
     newly_unlocked = check_and_award_on_score(
         user_id, game, rank,
         valid_words=item.get("valid_words"),
@@ -45,6 +47,11 @@ def post_score(submission: ScoreSubmission, user_id: str = Depends(get_verified_
         current_streak=item.get("current_streak"),
         all_computed_values=submission.all_computed_values or [],
     )
+    # Fetch the daily best (across ALL daily puzzles) to show in the results screen.
+    # Fall back to the just-submitted item if the GSI hasn't propagated yet (first play).
+    daily_best = None
+    if is_daily:
+        daily_best = get_daily_best(user_id, game) or item
     return ScoreSubmissionResult(
         score_id=item["score_id"],
         rank_today=rank or 0,
@@ -55,6 +62,10 @@ def post_score(submission: ScoreSubmission, user_id: str = Depends(get_verified_
         distance=item.get("distance"),
         steps=item.get("steps"),
         newly_unlocked=newly_unlocked,
+        daily_best_score=daily_best.get("score") if daily_best else None,
+        daily_best_word_count=len(daily_best.get("valid_words") or []) if daily_best else None,
+        daily_best_distance=daily_best.get("distance") if daily_best else None,
+        daily_best_result_value=daily_best.get("result_value") if daily_best else None,
     )
 
 

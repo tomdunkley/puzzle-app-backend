@@ -134,6 +134,10 @@ def _friendship_status(requesting_user_id: str, candidate_user_id: str) -> str:
     return "none"
 
 
+def get_friendship_status(requesting_user_id: str, candidate_user_id: str) -> str:
+    return _friendship_status(requesting_user_id, candidate_user_id)
+
+
 def search_users(query: str, requesting_user_id: str) -> list[dict]:
     """Hobby-scale search: an exact email lookup (via the existing password-identity
     index) if `query` looks like an email, otherwise a full table scan with a
@@ -160,6 +164,8 @@ def search_users(query: str, requesting_user_id: str) -> list[dict]:
     results = []
     for user in candidates:
         if user["user_id"] == requesting_user_id:
+            continue
+        if user.get("is_test_account"):
             continue
         results.append(
             {

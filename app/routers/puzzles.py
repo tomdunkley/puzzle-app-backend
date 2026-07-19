@@ -44,7 +44,7 @@ def _to_response(puzzle: dict, user_id: str) -> Puzzle:
 # Browsing the games list (router/games.py) stays public so Home can show what's
 # available, but actually fetching a board -- i.e. playing -- requires sign-in.
 @router.get("/puzzles/today", response_model=Puzzle)
-def get_today_puzzle(game: str, user_id: str = Depends(get_current_user_id)):
+def get_today_puzzle(game: str, user_id: str = Depends(get_verified_user_id)):
     puzzle = get_or_create_today_puzzle(game)
     return _to_response(puzzle, user_id)
 

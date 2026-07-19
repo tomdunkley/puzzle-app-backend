@@ -30,9 +30,9 @@ def test_update_display_name_rejects_at_sign(client, auth_headers):
 
 def test_update_avatar_succeeds(client, auth_headers):
     tom = auth_headers("Tom")
-    response = client.patch("/v1/users/me", json={"avatar_id": "dice"}, headers=tom)
+    response = client.patch("/v1/users/me", json={"avatar_id": "words"}, headers=tom)
     assert response.status_code == 200
-    assert response.json()["avatar_id"] == "dice"
+    assert response.json()["avatar_id"] == "words"
 
 
 def test_update_avatar_rejects_invalid_id(client, auth_headers):
