@@ -52,6 +52,7 @@ class DailyBestScore(BaseModel):
     word_count: int | None = None
     result_value: int | None = None
     distance: int | None = None
+    duration_seconds: int | None = None
     puzzle_id: str
 
 

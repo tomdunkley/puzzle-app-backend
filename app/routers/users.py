@@ -114,6 +114,7 @@ def _daily_best_score(user_id: str, game: str) -> DailyBestScore | None:
             game=game,
             result_value=item.get("result_value"),
             distance=item.get("distance"),
+            duration_seconds=item.get("duration_seconds"),
             puzzle_id=item["puzzle_id"],
         )
     return DailyBestScore(
