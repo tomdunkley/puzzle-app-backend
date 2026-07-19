@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Response
 
 from app.auth.dependency import get_current_user_id
@@ -85,9 +87,22 @@ def _today_score(user_id: str, game: str) -> TodayGameScore | None:
     item = get_today_score_for_user(user_id, game)
     if item is None:
         return None
+    today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    puzzle_id = f"{game}_{today_iso}"
     if game == "numbers":
-        return TodayGameScore(game=game, result_value=item.get("result_value"), distance=item.get("distance"))
-    return TodayGameScore(game=game, score=item.get("score"), word_count=len(item.get("valid_words") or []))
+        return TodayGameScore(
+            game=game,
+            result_value=item.get("result_value"),
+            distance=item.get("distance"),
+            duration_seconds=item.get("duration_seconds"),
+            puzzle_id=puzzle_id,
+        )
+    return TodayGameScore(
+        game=game,
+        score=item.get("score"),
+        word_count=len(item.get("valid_words") or []),
+        puzzle_id=puzzle_id,
+    )
 
 
 def _daily_best_score(user_id: str, game: str) -> DailyBestScore | None:
