@@ -337,6 +337,14 @@
       ).join('');
     }
 
+    // Show starting numbers
+    const numbersEl = document.getElementById('results-numbers');
+    if (numbersEl && puzzle && puzzle.numbers) {
+      numbersEl.innerHTML = puzzle.numbers.map(v =>
+        `<div class="number-tile-wrap"><button class="number-tile" disabled>${v}</button></div>`
+      ).join('');
+    }
+
     // Leaderboards
     if (puzzleId) {
       await Leaderboard.render(
@@ -344,9 +352,8 @@
         puzzleId,
         e => {
           const rv = e.result_value;
-          const tgt = e.target;
           if (rv == null) return '—';
-          return rv === tgt ? `${rv} ✓` : `${rv} (${Math.abs(rv - tgt)} away)`;
+          return rv === target ? `${rv} ✓` : `${rv} (${Math.abs(rv - target)} away)`;
         },
         myUserId,
       );
@@ -354,29 +361,19 @@
   }
 
   async function showAlreadyPlayed(data) {
-    show('state-already-played');
     const rv = data.your_result_value;
-    const tgt = data.target;
+    const solved = rv === target;
 
-    document.getElementById('already-headline').textContent =
-      rv === tgt ? 'Solved!' : 'Already played';
-    document.getElementById('already-result').textContent =
-      rv === tgt ? `Reached ${tgt}!` :
-      rv != null ? `Closest: ${rv} (${Math.abs(rv - tgt)} away from ${tgt})` : '';
+    if (myUserId && data.puzzle_id) {
+      try {
+        const detail = await API.get(`v1/scores/${data.puzzle_id}/${myUserId}`);
+        bestSteps = detail.steps || [];
+      } catch (_) { bestSteps = []; }
+    }
 
-    // Leaderboards
-    if (data.puzzle_id) {
-      await Leaderboard.render(
-        document.getElementById('already-leaderboard'),
-        data.puzzle_id,
-        e => {
-          const rv2 = e.result_value;
-          const tgt2 = e.target;
-          if (rv2 == null) return '—';
-          return rv2 === tgt2 ? `${rv2} ✓` : `${rv2} (${Math.abs(rv2 - tgt2)} away)`;
-        },
-        myUserId,
-      );
+    await showResults(solved, rv, data.puzzle_id);
+    if (!solved) {
+      document.getElementById('results-headline').textContent = 'Already played';
     }
   }
 
