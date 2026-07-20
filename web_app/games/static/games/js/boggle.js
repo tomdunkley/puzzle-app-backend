@@ -266,7 +266,7 @@
       await Leaderboard.render(
         document.getElementById('results-leaderboard'),
         puzzleId,
-        e => `${e.score} pts`,
+        e => e.word_count != null ? `${e.score} pts (${e.word_count} words)` : `${e.score} pts`,
         myUserId,
       );
     }
@@ -301,7 +301,7 @@
       await Leaderboard.render(
         document.getElementById('already-leaderboard'),
         data.puzzle_id,
-        e => `${e.score} pts`,
+        e => e.word_count != null ? `${e.score} pts (${e.word_count} words)` : `${e.score} pts`,
         myUserId,
       );
     }
