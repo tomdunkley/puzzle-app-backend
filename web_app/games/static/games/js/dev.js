@@ -9,13 +9,17 @@
 
   function fmtDate(iso) {
     if (!iso) return '—';
-    try { return new Date(iso).toLocaleDateString(); } catch { return iso; }
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch { return iso; }
   }
 
   function renderRow(u) {
     const uid = API.escHtml(u.user_id || '');
+    const slug = API.escHtml((u.display_name || '').toLowerCase().replace(/\s+/g, '_'));
     return `<tr>
-      <td><a href="/users/${uid}/" style="color:inherit;text-decoration:none">${API.escHtml(u.display_name || '—')}</a></td>
+      <td><a href="/users/${slug}/" style="color:inherit;text-decoration:none">${API.escHtml(u.display_name || '—')}</a></td>
       <td style="font-size:0.72rem;color:var(--ink-mid)">${uid}</td>
       <td>${API.escHtml(u.email || '—')}</td>
       <td>${yn(u.email_verified)}</td>

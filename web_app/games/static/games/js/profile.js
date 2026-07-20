@@ -77,7 +77,13 @@
   // ── Profile header ───────────────────────────────────────────────
 
   function renderHeader(profile) {
-    document.getElementById('profile-avatar').textContent = avatarInitials(profile.display_name);
+    const avatarEl = document.getElementById('profile-avatar');
+    const emoji = profile.avatar_id && AVATAR_EMOJI[profile.avatar_id];
+    const bg = profile.avatar_color_id && COLOR_HEX[profile.avatar_color_id];
+    if (bg) { avatarEl.style.background = bg; avatarEl.style.color = '#fff'; }
+    avatarEl.innerHTML = emoji
+      ? `<span style="font-size:1.8rem;line-height:1">${emoji}</span>`
+      : API.escHtml(avatarInitials(profile.display_name));
     document.getElementById('profile-display-name').textContent = profile.display_name;
     document.getElementById('settings-display-name').textContent = profile.display_name;
     document.getElementById('new-display-name').value = profile.display_name;

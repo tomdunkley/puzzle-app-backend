@@ -11,6 +11,24 @@ const Auth = (() => {
         lotus: '🌸', pizza: '🍕', cake: '🎂', egg: '🥚', raven: '🐦',
     };
 
+    const AVATAR_COLOR = {
+        red: '#D32F2F', green: '#388E3C', blue: '#1565C0', orange: '#E65100',
+        gold: '#FFAA00', black: '#212121', silver: '#C0C0C0', purple: '#7B1FA2',
+        teal: '#00695C', pink: '#E91E63', lime: '#558B2F',
+    };
+
+    function setNavAvatar(profileLink, avatarId, colorId, displayName) {
+        const emoji = avatarId && AVATAR_EMOJI[avatarId];
+        const bg = colorId && AVATAR_COLOR[colorId];
+        if (bg) profileLink.style.background = bg;
+        if (emoji) {
+            profileLink.innerHTML = `<span style="font-size:1.2rem;line-height:1">${emoji}</span>`;
+        } else {
+            const initials = (displayName || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+            profileLink.innerHTML = `<span style="font-size:0.72rem;font-weight:700;color:${bg ? '#fff' : 'var(--ink-mid)'}">${API.escHtml(initials)}</span>`;
+        }
+    }
+
     function saveTokens({ access_token, refresh_token }) {
         localStorage.setItem('td_access_token', access_token);
         localStorage.setItem('td_refresh_token', refresh_token);
@@ -22,29 +40,21 @@ const Auth = (() => {
         const devLink = document.getElementById('nav-dev-link');
 
         if (API.isLoggedIn()) {
+            // Show initials immediately from localStorage so the icon never disappears
+            if (profileLink) {
+                const name = localStorage.getItem('td_display_name') || '';
+                if (name) setNavAvatar(profileLink, null, null, name);
+            }
+            // Then fetch full profile to upgrade to emoji + colour
             try {
                 const profile = await API.get('v1/users/me');
                 if (profileLink) {
-                    const emoji = profile.avatar_id && AVATAR_EMOJI[profile.avatar_id];
-                    if (emoji) {
-                        profileLink.innerHTML = `<span style="font-size:1.2rem;line-height:1">${emoji}</span>`;
-                    } else {
-                        const name = localStorage.getItem('td_display_name') || profile.display_name || '';
-                        const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-                        profileLink.innerHTML = `<span style="font-size:0.72rem;font-weight:700;color:var(--ink-mid)">${API.escHtml(initials)}</span>`;
-                    }
+                    setNavAvatar(profileLink, profile.avatar_id, profile.avatar_color_id, profile.display_name);
                 }
                 if (devLink && profile && profile.is_developer) {
                     devLink.style.display = '';
                 }
-            } catch (_) {
-                // Fall back to initials from localStorage
-                const name = localStorage.getItem('td_display_name') || '';
-                if (profileLink && name) {
-                    const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-                    profileLink.innerHTML = `<span style="font-size:0.72rem;font-weight:700;color:var(--ink-mid)">${API.escHtml(initials)}</span>`;
-                }
-            }
+            } catch (_) { /* keep initials already shown */ }
         }
 
         // Mark active nav link (Puzzles link active on home)
