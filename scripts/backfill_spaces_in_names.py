@@ -33,7 +33,7 @@ def main(table_name: str) -> None:
             skipped += 1
             continue
 
-        new_name = display_name.replace(" ", "_")
+        new_name = display_name.strip().replace(" ", "_")
         new_lower = new_name.lower()
 
         # Check for conflict with another user (excluding self).
