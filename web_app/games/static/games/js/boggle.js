@@ -311,49 +311,72 @@
 
   document.getElementById('finish-early-btn').addEventListener('click', finish);
 
+  async function loadPuzzleAndStart() {
+    if (API.isLoggedIn()) {
+      try {
+        const me = await API.get('v1/users/me');
+        myUserId = me.user_id;
+      } catch (_) { /* guest */ }
+    }
+
+    const data = await API.get('v1/puzzles/today?game=boggle');
+    puzzle = data;
+    board = Array.isArray(data.board[0]) ? data.board.flat() : data.board;
+
+    if (data.already_played) {
+      await showAlreadyPlayed(data);
+      return;
+    }
+
+    const saved = loadProgress();
+    if (saved) {
+      foundWords = new Set(saved.foundWords || []);
+      secondsLeft = saved.secondsLeft ?? (data.duration_seconds || 180);
+      paused = saved.paused || false;
+    } else {
+      secondsLeft = data.duration_seconds || 180;
+    }
+
+    document.getElementById('timer').textContent = fmtTime(secondsLeft);
+    show('state-playing');
+    renderBoard();
+    renderFoundWords();
+    updateWordCount();
+    startTimer();
+
+    if (paused) {
+      const score = calcScore([...foundWords]);
+      document.getElementById('pause-score').textContent = `${score} pts · ${foundWords.size} words`;
+      show('state-paused');
+    }
+  }
+
   async function init() {
-    try {
-      await API.ensureSession();
-      loadDictionary();
+    loadDictionary();
 
-      // Get own user ID for leaderboard highlighting
-      if (API.isLoggedIn()) {
+    if (!localStorage.getItem('td_access_token')) {
+      // No session yet — show a start gate so we only create a guest account if they actually play
+      const loadingEl = document.getElementById('state-loading');
+      loadingEl.innerHTML = `
+        <div style="text-align:center;padding:40px 0">
+          <p style="color:var(--ink-mid);margin-bottom:20px">Ready to play today's Words puzzle?</p>
+          <button class="btn btn-primary" id="start-gate-btn">Start today's puzzle</button>
+        </div>`;
+      document.getElementById('start-gate-btn').addEventListener('click', async () => {
+        loadingEl.innerHTML = '<p style="color:var(--ink-mid)">Loading today\'s puzzle…</p>';
         try {
-          const me = await API.get('v1/users/me');
-          myUserId = me.user_id;
-        } catch (_) { /* guest */ }
-      }
+          await API.ensureSession();
+          await loadPuzzleAndStart();
+        } catch (e) {
+          show('state-error');
+          document.getElementById('error-msg').textContent = e.message || 'Failed to load puzzle.';
+        }
+      });
+      return;
+    }
 
-      const data = await API.get('v1/puzzles/today?game=boggle');
-      puzzle = data;
-      board = Array.isArray(data.board[0]) ? data.board.flat() : data.board;
-
-      if (data.already_played) {
-        await showAlreadyPlayed(data);
-        return;
-      }
-
-      const saved = loadProgress();
-      if (saved) {
-        foundWords = new Set(saved.foundWords || []);
-        secondsLeft = saved.secondsLeft ?? (data.duration_seconds || 180);
-        paused = saved.paused || false;
-      } else {
-        secondsLeft = data.duration_seconds || 180;
-      }
-
-      document.getElementById('timer').textContent = fmtTime(secondsLeft);
-      show('state-playing');
-      renderBoard();
-      renderFoundWords();
-      updateWordCount();
-      startTimer();
-
-      if (paused) {
-        const score = calcScore([...foundWords]);
-        document.getElementById('pause-score').textContent = `${score} pts · ${foundWords.size} words`;
-        show('state-paused');
-      }
+    try {
+      await loadPuzzleAndStart();
     } catch (e) {
       show('state-error');
       document.getElementById('error-msg').textContent = e.message || 'Failed to load puzzle.';

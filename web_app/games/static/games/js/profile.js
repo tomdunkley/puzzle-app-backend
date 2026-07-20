@@ -283,7 +283,6 @@
   // ── Init ─────────────────────────────────────────────────────────
 
   async function init() {
-    await API.ensureSession();
     if (!API.isLoggedIn()) { show('profile-gate'); return; }
 
     try {

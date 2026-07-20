@@ -380,63 +380,86 @@
     }
   }
 
+  async function loadPuzzleAndStart() {
+    if (API.isLoggedIn()) {
+      try {
+        const me = await API.get('v1/users/me');
+        myUserId = me.user_id;
+      } catch (_) { /* guest */ }
+    }
+
+    const data = await API.get('v1/puzzles/today?game=numbers');
+    puzzle = data;
+    target = data.target;
+
+    if (data.already_played) {
+      await showAlreadyPlayed(data);
+      return;
+    }
+
+    const saved = loadProgress();
+    if (saved) {
+      tiles = saved.tiles;
+      steps = saved.steps;
+      nextStepId = saved.nextStepId || 0;
+      bestValue = saved.bestValue;
+      bestSteps = saved.bestSteps || [];
+      allComputedValues = saved.allComputedValues || [];
+      secondsLeft = saved.secondsLeft ?? (data.duration_seconds || 180);
+      paused = saved.paused || false;
+    } else {
+      tiles = data.numbers.map((v, i) => ({ value: v, id: i, used: false }));
+      steps = [];
+      nextStepId = data.numbers.length;
+      bestValue = data.numbers.reduce((best, v) =>
+        Math.abs(v - target) < Math.abs(best - target) ? v : best, data.numbers[0]);
+      bestSteps = [];
+      allComputedValues = [];
+      secondsLeft = data.duration_seconds || 180;
+    }
+
+    document.getElementById('timer').textContent = fmtTime(secondsLeft);
+    document.getElementById('target').textContent = target;
+
+    show('state-playing');
+    renderTiles();
+    setOpsEnabled(false);
+    updateSubmitBtn();
+    renderClosestDisplay();
+    startTimer();
+
+    if (paused) {
+      const closest = bestValue !== null ? bestValue : '';
+      document.getElementById('pause-closest').textContent =
+        closest !== '' ? (closest === target ? `You've got it: ${target}` : `Closest so far: ${closest} (${Math.abs(closest - target)} away)`) : '';
+      show('state-paused');
+    }
+  }
+
   async function init() {
-    try {
-      await API.ensureSession();
-
-      if (API.isLoggedIn()) {
+    if (!localStorage.getItem('td_access_token')) {
+      // No session yet — show a start gate so we only create a guest account if they actually play
+      const loadingEl = document.getElementById('state-loading');
+      loadingEl.innerHTML = `
+        <div style="text-align:center;padding:40px 0">
+          <p style="color:var(--ink-mid);margin-bottom:20px">Ready to play today's Numbers puzzle?</p>
+          <button class="btn btn-primary" id="start-gate-btn">Start today's puzzle</button>
+        </div>`;
+      document.getElementById('start-gate-btn').addEventListener('click', async () => {
+        loadingEl.innerHTML = '<p style="color:var(--ink-mid)">Loading today\'s puzzle…</p>';
         try {
-          const me = await API.get('v1/users/me');
-          myUserId = me.user_id;
-        } catch (_) { /* guest */ }
-      }
+          await API.ensureSession();
+          await loadPuzzleAndStart();
+        } catch (e) {
+          show('state-error');
+          document.getElementById('error-msg').textContent = e.message || 'Failed to load puzzle.';
+        }
+      });
+      return;
+    }
 
-      const data = await API.get('v1/puzzles/today?game=numbers');
-      puzzle = data;
-      target = data.target;
-
-      if (data.already_played) {
-        await showAlreadyPlayed(data);
-        return;
-      }
-
-      const saved = loadProgress();
-      if (saved) {
-        tiles = saved.tiles;
-        steps = saved.steps;
-        nextStepId = saved.nextStepId || 0;
-        bestValue = saved.bestValue;
-        bestSteps = saved.bestSteps || [];
-        allComputedValues = saved.allComputedValues || [];
-        secondsLeft = saved.secondsLeft ?? (data.duration_seconds || 180);
-        paused = saved.paused || false;
-      } else {
-        tiles = data.numbers.map((v, i) => ({ value: v, id: i, used: false }));
-        steps = [];
-        nextStepId = data.numbers.length;
-        bestValue = data.numbers.reduce((best, v) =>
-          Math.abs(v - target) < Math.abs(best - target) ? v : best, data.numbers[0]);
-        bestSteps = [];
-        allComputedValues = [];
-        secondsLeft = data.duration_seconds || 180;
-      }
-
-      document.getElementById('timer').textContent = fmtTime(secondsLeft);
-      document.getElementById('target').textContent = target;
-
-      show('state-playing');
-      renderTiles();
-      setOpsEnabled(false);
-      updateSubmitBtn();
-      renderClosestDisplay();
-      startTimer();
-
-      if (paused) {
-        const closest = bestValue !== null ? bestValue : '';
-        document.getElementById('pause-closest').textContent =
-          closest !== '' ? (closest === target ? `You've got it: ${target}` : `Closest so far: ${closest} (${Math.abs(closest - target)} away)`) : '';
-        show('state-paused');
-      }
+    try {
+      await loadPuzzleAndStart();
     } catch (e) {
       show('state-error');
       document.getElementById('error-msg').textContent = e.message || 'Failed to load puzzle.';

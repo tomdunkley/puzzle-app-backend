@@ -85,7 +85,6 @@
     const contentEl = document.getElementById('up-content');
 
     try {
-      await API.ensureSession();
       const profile = await API.get(`v1/users/${userId}/profile`);
 
       loadingEl.style.display = 'none';
@@ -121,8 +120,14 @@
 
     } catch (e) {
       loadingEl.style.display = 'none';
-      errorEl.style.display = '';
-      document.getElementById('up-error-msg').textContent = e.message || 'Profile not found.';
+      if (e.status === 401) {
+        errorEl.style.display = '';
+        document.getElementById('up-error-msg').innerHTML =
+          '<a href="/login/">Sign in</a> to view player profiles.';
+      } else {
+        errorEl.style.display = '';
+        document.getElementById('up-error-msg').textContent = e.message || 'Profile not found.';
+      }
     }
   }
 

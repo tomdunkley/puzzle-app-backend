@@ -100,7 +100,6 @@
   document.getElementById('dev-refresh-btn').addEventListener('click', loadUsers);
 
   async function init() {
-    await API.ensureSession();
     const loadingEl = document.getElementById('dev-loading');
     const gateEl = document.getElementById('dev-gate');
     const contentEl = document.getElementById('dev-content');
