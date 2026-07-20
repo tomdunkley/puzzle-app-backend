@@ -102,7 +102,7 @@ def test_register_rejects_duplicate_display_name_case_insensitive(client):
     )
     response = client.post(
         "/v1/auth/register",
-        json={"email": "other@example.com", "password": "correct-horse", "display_name": "  TOM  "},
+        json={"email": "other@example.com", "password": "correct-horse", "display_name": "TOM"},
     )
     assert response.status_code == 409
     assert response.json()["detail"] == "display name already taken"

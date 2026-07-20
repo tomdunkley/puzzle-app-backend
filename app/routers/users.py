@@ -20,6 +20,7 @@ from app.services.user_service import (
     InvalidAvatarIdError,
     ProfanityError,
     delete_account,
+    find_user_by_display_name_lower,
     get_user,
     is_developer,
     list_identity_providers,
@@ -122,6 +123,29 @@ def _daily_best_score(user_id: str, game: str) -> DailyBestScore | None:
         score=item.get("score"),
         word_count=len(item.get("valid_words") or []),
         puzzle_id=item["puzzle_id"],
+    )
+
+
+@router.get("/users/by-name/{name_slug}", response_model=PublicUserProfile)
+def get_user_profile_by_name(name_slug: str, requesting_user_id: str = Depends(get_current_user_id)):
+    user = find_user_by_display_name_lower(name_slug.lower())
+    if user is None:
+        raise HTTPException(status_code=404, detail="user not found")
+    user_id = user["user_id"]
+    unlocked = get_unlocked(user_id)
+    return PublicUserProfile(
+        user_id=user_id,
+        display_name=user["display_name"],
+        avatar_id=user.get("avatar_id"),
+        avatar_color_id=user.get("avatar_color_id"),
+        avatar_icon_color=user.get("avatar_icon_color"),
+        friendship_status=get_friendship_status(requesting_user_id, user_id),
+        today_boggle=_today_score(user_id, "boggle"),
+        today_numbers=_today_score(user_id, "numbers"),
+        boggle_daily_best=_daily_best_score(user_id, "boggle"),
+        numbers_daily_best=_daily_best_score(user_id, "numbers"),
+        trophy_count=len(unlocked),
+        total_trophies=len(ACHIEVEMENTS),
     )
 
 

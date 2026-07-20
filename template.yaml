@@ -286,6 +286,23 @@ Resources:
             Action: 's3:GetObject'
             Resource: !Sub "arn:aws:s3:::${WebBucket}/*"
 
+  UsersRewriteFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      AutoPublish: true
+      Name: !Sub "${AWS::StackName}-users-rewrite"
+      FunctionConfig:
+        Comment: Rewrite /users/{name} to /users/index.html
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+            var uri = event.request.uri;
+            if (/^\/users\/[^\/]+\/?$/.test(uri)) {
+                event.request.uri = '/users/index.html';
+            }
+            return event.request;
+        }
+
   WebDistribution:
     Type: AWS::CloudFront::Distribution
     Properties:
@@ -308,6 +325,9 @@ Resources:
           AllowedMethods: [GET, HEAD]
           Compress: true
           CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # AWS Managed CachingOptimized
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt UsersRewriteFunction.FunctionARN
 
 Outputs:
   ApiUrl:

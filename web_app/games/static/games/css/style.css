@@ -41,8 +41,16 @@ input, textarea, select { font-family: inherit; }
   display: inline-block;
   flex-shrink: 0;
   line-height: 0;
+  width: 56px;
+  height: 30px;
+  overflow: hidden;
 }
-.td-icon img { display: block; width: 36px; height: 36px; object-fit: contain; }
+.td-icon img {
+  display: block;
+  width: 108px;
+  height: 108px;
+  margin: -39px -26px;
+}
 
 /* ── Navigation ────────────────────────────────────────────────── */
 .nav {
@@ -664,6 +672,9 @@ input, textarea, select { font-family: inherit; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 10px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 .trophy-card {
   border: 1px solid var(--border);
@@ -722,7 +733,7 @@ input, textarea, select { font-family: inherit; }
 .auth-gate-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
 /* ── Dev page ───────────────────────────────────────────────────── */
-.dev-table-wrap { overflow-x: auto; }
+.dev-table-wrap { overflow-x: visible; }
 .dev-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
 .dev-table th {
   text-align: left;

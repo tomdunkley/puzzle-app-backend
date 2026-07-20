@@ -1,9 +1,8 @@
 'use strict';
 
 (() => {
-  // Try template-injected ID first (Django-served), fall back to URL path (static build)
-  const userId = window.UP_USER_ID ||
-    (window.location.pathname.match(/\/users\/([^/]+)\//) || [])[1];
+  // Extract name slug from URL path, e.g. /users/tomdunkley/ → "tomdunkley"
+  const nameSlug = (window.location.pathname.match(/\/users\/([^/]+)\//) || [])[1];
 
   function fmtScore(game, today) {
     if (!today) return 'Not played today';
@@ -85,7 +84,17 @@
     const contentEl = document.getElementById('up-content');
 
     try {
-      const profile = await API.get(`v1/users/${userId}/profile`);
+      // Try by display name first; fall back to user ID for any old links
+      let profile;
+      try {
+        profile = await API.get(`v1/users/by-name/${encodeURIComponent(nameSlug)}`);
+      } catch (nameErr) {
+        if (nameErr.status === 404) {
+          profile = await API.get(`v1/users/${nameSlug}/profile`);
+        } else {
+          throw nameErr;
+        }
+      }
 
       loadingEl.style.display = 'none';
       contentEl.style.display = '';

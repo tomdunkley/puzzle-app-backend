@@ -4,6 +4,43 @@
   let myProfile = null;
   let searchDebounce = null;
 
+  // ── Avatar / trophy helpers ────────────────────────────────────
+
+  const AVATAR_EMOJI = {
+    numbers: '🔢', words: '🔤', friend: '👥', flex: '💪', taunt: '😏',
+    owl: '🦉', eight: '8️⃣', meta: '♾️', queen: '👑', santa: '🎅',
+    sunglasses: '😎', bullseye: '🎯', fire: '🔥', bolt_icon: '⚡',
+    star_icon: '⭐', shield: '🛡️', coffee: '☕', anchor: '⚓',
+    heart: '❤️', music: '🎵', snowflake: '❄️', sun_icon: '☀️',
+    lotus: '🌸', pizza: '🍕', cake: '🎂', egg: '🥚', raven: '🐦',
+  };
+
+  const COLOR_HEX = {
+    gold: '#FFAA00', silver: '#C0C0C0', black: '#212121',
+    purple: '#7B1FA2', teal: '#00695C', pink: '#E91E63', lime: '#558B2F',
+    red: '#D32F2F', green: '#388E3C', blue: '#1565C0', orange: '#E65100',
+  };
+
+  function colorSwatch(colorId) {
+    const hex = COLOR_HEX[colorId] || '#888';
+    return `<span style="display:inline-block;width:1.3em;height:1.3em;background:${hex};border:1px solid rgba(0,0,0,0.15);border-radius:2px;vertical-align:middle"></span>`;
+  }
+
+  function trophyIcon(t) {
+    if (!t.unlocked_at) return '🔒';
+    if (t.unlocks_color_id) return colorSwatch(t.unlocks_color_id);
+    if (t.unlocks_icon_color_id) return colorSwatch(t.unlocks_icon_color_id);
+    if (t.unlocks_avatar_id) return AVATAR_EMOJI[t.unlocks_avatar_id] || '🏆';
+    return '🏆';
+  }
+
+  function trophyGroup(t) {
+    if (t.unlocked_at) return 0;
+    if (!t.id.includes('streak')) return 1;
+    if (t.id.startsWith('words_streak')) return 2;
+    return 3;
+  }
+
   // ── Helpers ──────────────────────────────────────────────────────
 
   function show(elId) {
@@ -82,12 +119,23 @@
       const earned = trophies.filter(t => t.unlocked_at);
       badgeEl.textContent = `${earned.length} / ${trophies.length}`;
       if (trophies.length === 0) { emptyEl.style.display = ''; return; }
-      gridEl.innerHTML = trophies.map(t => {
+
+      // Sort: unlocked newest first → non-streak locked → words-streak locked → numbers-streak locked
+      const sorted = [...trophies].sort((a, b) => {
+        const ga = trophyGroup(a), gb = trophyGroup(b);
+        if (ga !== gb) return ga - gb;
+        if (ga === 0) return new Date(b.unlocked_at) - new Date(a.unlocked_at);
+        return 0;
+      });
+
+      gridEl.innerHTML = sorted.map(t => {
         const isEarned = !!t.unlocked_at;
+        const icon = trophyIcon(t);
+        const desc = isEarned ? API.escHtml(t.description) : '?????';
         return `<div class="trophy-card${isEarned ? '' : ' trophy-locked'}">
-          <div class="trophy-icon">${isEarned ? '🏆' : '🔒'}</div>
+          <div class="trophy-icon">${icon}</div>
           <div class="trophy-name">${API.escHtml(t.title)}</div>
-          <div class="trophy-desc">${API.escHtml(t.description)}</div>
+          <div class="trophy-desc">${desc}</div>
           ${isEarned ? `<div class="trophy-date">${new Date(t.unlocked_at).toLocaleDateString()}</div>` : ''}
         </div>`;
       }).join('');
@@ -112,7 +160,8 @@
   }
 
   function renderUserRow(user, actionHtml) {
-    const profileUrl = `/users/${API.escHtml(user.user_id)}/`;
+    const slug = (user.display_name || '').toLowerCase().replace(/\s+/g, '_');
+    const profileUrl = `/users/${API.escHtml(slug)}/`;
     return `<div class="friend-row">
       <a href="${profileUrl}" class="friend-name" style="text-decoration:none;color:inherit">${API.escHtml(user.display_name)}</a>
       <span class="friend-actions">${actionHtml}</span>

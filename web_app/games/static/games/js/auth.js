@@ -2,6 +2,15 @@
 
 const Auth = (() => {
 
+    const AVATAR_EMOJI = {
+        numbers: '🔢', words: '🔤', friend: '👥', flex: '💪', taunt: '😏',
+        owl: '🦉', eight: '8️⃣', meta: '♾️', queen: '👑', santa: '🎅',
+        sunglasses: '😎', bullseye: '🎯', fire: '🔥', bolt_icon: '⚡',
+        star_icon: '⭐', shield: '🛡️', coffee: '☕', anchor: '⚓',
+        heart: '❤️', music: '🎵', snowflake: '❄️', sun_icon: '☀️',
+        lotus: '🌸', pizza: '🍕', cake: '🎂', egg: '🥚', raven: '🐦',
+    };
+
     function saveTokens({ access_token, refresh_token }) {
         localStorage.setItem('td_access_token', access_token);
         localStorage.setItem('td_refresh_token', refresh_token);
@@ -13,20 +22,28 @@ const Auth = (() => {
         const devLink = document.getElementById('nav-dev-link');
 
         if (API.isLoggedIn()) {
-            // Show initials in the profile circle
-            const name = localStorage.getItem('td_display_name') || '';
-            if (profileLink && name) {
-                const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-                profileLink.innerHTML = `<span style="font-size:0.72rem;font-weight:700;color:var(--ink-mid)">${API.escHtml(initials)}</span>`;
-            }
-            // Show dev link if developer
-            if (devLink) {
-                try {
-                    const profile = await API.get('v1/users/me');
-                    if (profile && profile.is_developer) {
-                        devLink.style.display = '';
+            try {
+                const profile = await API.get('v1/users/me');
+                if (profileLink) {
+                    const emoji = profile.avatar_id && AVATAR_EMOJI[profile.avatar_id];
+                    if (emoji) {
+                        profileLink.innerHTML = `<span style="font-size:1.2rem;line-height:1">${emoji}</span>`;
+                    } else {
+                        const name = localStorage.getItem('td_display_name') || profile.display_name || '';
+                        const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+                        profileLink.innerHTML = `<span style="font-size:0.72rem;font-weight:700;color:var(--ink-mid)">${API.escHtml(initials)}</span>`;
                     }
-                } catch (_) { /* not a dev or request failed */ }
+                }
+                if (devLink && profile && profile.is_developer) {
+                    devLink.style.display = '';
+                }
+            } catch (_) {
+                // Fall back to initials from localStorage
+                const name = localStorage.getItem('td_display_name') || '';
+                if (profileLink && name) {
+                    const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+                    profileLink.innerHTML = `<span style="font-size:0.72rem;font-weight:700;color:var(--ink-mid)">${API.escHtml(initials)}</span>`;
+                }
             }
         }
 

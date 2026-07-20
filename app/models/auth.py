@@ -19,6 +19,8 @@ class RefreshRequest(BaseModel):
 def validate_display_name_no_at(display_name: str) -> str:
     if "@" in display_name:
         raise ValueError("display name cannot contain '@'")
+    if " " in display_name:
+        raise ValueError("display name cannot contain spaces")
     return display_name
 
 

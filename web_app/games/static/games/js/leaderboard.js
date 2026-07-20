@@ -56,7 +56,8 @@ const Leaderboard = (() => {
             const isSelf = e.user_id === myUserId;
             const name = API.escHtml(e.display_name || 'Unknown');
             const youBadge = isSelf ? '<span class="you-badge">you</span>' : '';
-            const profileUrl = `/users/${API.escHtml(e.user_id)}/`;
+            const slug = (e.display_name || '').toLowerCase().replace(/\s+/g, '_');
+            const profileUrl = `/users/${API.escHtml(slug)}/`;
             return `<tr class="${isSelf ? 'self-row' : ''}">
                 <td class="rank-col">${i + 1}</td>
                 <td><a href="${profileUrl}" style="text-decoration:none;color:inherit">${name}</a>${youBadge}</td>
