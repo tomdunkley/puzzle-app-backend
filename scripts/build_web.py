@@ -40,10 +40,12 @@ def main():
     static_src = root / 'web_app' / 'staticfiles'
     out = root / 'web_dist'
 
-    if not static_src.exists():
-        print('ERROR: web_app/staticfiles/ not found.', file=sys.stderr)
-        print('Run first:  cd web_app && python manage.py collectstatic --noinput', file=sys.stderr)
-        sys.exit(1)
+    # Always re-collect static files so JS/CSS source changes are picked up.
+    import subprocess
+    subprocess.run(
+        [sys.executable, 'web_app/manage.py', 'collectstatic', '--noinput'],
+        cwd=root, check=True, capture_output=True,
+    )
 
     if out.exists():
         shutil.rmtree(out)
