@@ -39,3 +39,10 @@ local_settings.py
 # OS
 .DS_Store
 Thumbs.db
+
+# Web build output
+web_dist/
+web_app/staticfiles/
+
+# Netlify CLI
+.netlify/
