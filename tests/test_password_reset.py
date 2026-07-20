@@ -1,7 +1,7 @@
-def _register(client, email="tom@example.com", password="correct-horse", display_name="Tom"):
+def _register(client, email="tom@example.com", password="correct-horse"):
     response = client.post(
         "/v1/auth/register",
-        json={"email": email, "password": password, "display_name": display_name},
+        json={"email": email, "password": password},
     )
     assert response.status_code == 201, response.text
 

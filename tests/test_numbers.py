@@ -357,7 +357,6 @@ def test_guest_numbers_score_is_claimed_on_register(client):
         json={
             "email": "numbersguest@example.com",
             "password": "correct-horse",
-            "display_name": "NumbersGuest",
             "guest_access_token": guest["access_token"],
         },
     )

@@ -73,16 +73,16 @@ const Auth = (() => {
         return profile;
     }
 
-    async function register(displayName, email, password) {
+    async function register(email, password) {
         const guestToken = API.isGuest() ? localStorage.getItem('td_access_token') : null;
         const tokens = await API.post('v1/auth/register', {
-            display_name: displayName,
             email,
             password,
             guest_access_token: guestToken,
         });
         saveTokens(tokens);
-        localStorage.setItem('td_display_name', displayName);
+        const profile = await API.get('v1/users/me');
+        localStorage.setItem('td_display_name', profile.display_name);
     }
 
     async function loginWithGoogle(idToken) {

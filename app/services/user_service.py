@@ -222,10 +222,19 @@ def create_user_with_identity(
     return user
 
 
+def generate_display_name(max_attempts: int = 20) -> str:
+    from app.data.wordlist import ADJECTIVES, NOUNS
+    for _ in range(max_attempts):
+        name = f"{random.choice(ADJECTIVES)}{random.choice(NOUNS)}{random.randint(10, 99)}"
+        if find_user_by_display_name_lower(name.lower()) is None:
+            return name
+    return f"{random.choice(ADJECTIVES)}{random.choice(NOUNS)}{random.randint(1000, 9999)}"
+
+
 def get_or_create_user_for_identity(
     provider: str,
     provider_subject: str,
-    display_name: str,
+    display_name: str | None = None,
     email: str | None = None,
     email_verified: bool = False,
 ) -> dict:
@@ -234,6 +243,9 @@ def get_or_create_user_for_identity(
         user = get_user(identity["user_id"])
         if user is not None:
             return user
+
+    if display_name is None:
+        display_name = generate_display_name()
 
     return create_user_with_identity(
         provider, provider_subject, display_name, email=email, email_verified=email_verified

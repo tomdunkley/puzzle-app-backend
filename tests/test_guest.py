@@ -83,7 +83,6 @@ def test_registering_claims_todays_guest_score(client):
         json={
             "email": "tom@example.com",
             "password": "correct-horse",
-            "display_name": "Tom",
             "guest_access_token": guest_token,
         },
     )
@@ -110,7 +109,6 @@ def test_guest_account_is_deleted_after_claim(client):
         json={
             "email": "tom@example.com",
             "password": "correct-horse",
-            "display_name": "Tom",
             "guest_access_token": guest_token,
         },
     )
@@ -146,7 +144,7 @@ def test_guest_score_is_dropped_if_account_already_played_today_elsewhere(client
 def test_claim_is_a_no_op_with_no_guest_token(client):
     register = client.post(
         "/v1/auth/register",
-        json={"email": "tom@example.com", "password": "correct-horse", "display_name": "Tom"},
+        json={"email": "tom@example.com", "password": "correct-horse"},
     )
     assert register.status_code == 201
 
@@ -157,7 +155,6 @@ def test_claim_silently_ignores_a_garbage_guest_token(client):
         json={
             "email": "tom@example.com",
             "password": "correct-horse",
-            "display_name": "Tom",
             "guest_access_token": "not-a-real-token",
         },
     )

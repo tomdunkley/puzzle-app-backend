@@ -17,9 +17,7 @@ from app.models.auth import (
     TokenPair,
     VerifyEmailRequest,
 )
-from app.services.user_service import ProfanityError
 from app.services.auth_service import (
-    DisplayNameTakenError,
     EmailAlreadyRegisteredError,
     GoogleAccountAlreadyLinkedError,
     GoogleAccountEmailMismatchError,
@@ -80,16 +78,12 @@ def google_sign_in(body: GoogleSignInRequest):
 def register(body: RegisterRequest):
     try:
         _user, access_token, refresh_token = register_with_password(
-            body.email, body.password, body.display_name, body.guest_access_token
+            body.email, body.password, body.guest_access_token
         )
     except EmailAlreadyRegisteredError as exc:
         raise HTTPException(status_code=409, detail="email already registered") from exc
     except EmailTakenError as exc:
         raise HTTPException(status_code=409, detail="email already registered") from exc
-    except ProfanityError as exc:
-        raise HTTPException(status_code=400, detail="display name contains inappropriate language") from exc
-    except DisplayNameTakenError as exc:
-        raise HTTPException(status_code=409, detail="display name already taken") from exc
     return TokenPair(access_token=access_token, refresh_token=refresh_token)
 
 

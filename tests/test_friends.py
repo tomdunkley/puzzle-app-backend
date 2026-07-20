@@ -85,13 +85,15 @@ def test_search_by_exact_email_finds_user(client, auth_headers):
     tom = auth_headers("Tom")
     response = client.post(
         "/v1/auth/register",
-        json={"email": "alex@example.com", "password": "password123", "display_name": "Alex"},
+        json={"email": "alex@example.com", "password": "password123"},
     )
     assert response.status_code == 201
+    alex_headers = {"Authorization": f"Bearer {response.json()['access_token']}"}
+    alex_name = client.get("/v1/users/me", headers=alex_headers).json()["display_name"]
 
     results = client.get("/v1/users/search", params={"q": "alex@example.com"}, headers=tom).json()
     assert len(results) == 1
-    assert results[0]["display_name"] == "Alex"
+    assert results[0]["display_name"] == alex_name
     assert results[0]["friendship_status"] == "none"
 
 

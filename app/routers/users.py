@@ -14,7 +14,7 @@ from app.models.users import (
 from app.services.achievement_service import get_unlocked
 from app.services.friend_service import get_friendship_status
 from app.services.score_service import get_daily_best, get_today_score_for_user
-from app.services.auth_service import DisplayNameTakenError
+from app.services.user_service import DisplayNameTakenError
 from app.services.user_service import (
     InvalidAvatarColorIdError,
     InvalidAvatarIdError,

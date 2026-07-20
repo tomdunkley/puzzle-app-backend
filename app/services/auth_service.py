@@ -3,12 +3,11 @@ from app.auth.jwt import create_access_token, create_refresh_token
 from app.auth.password import hash_password, verify_password
 from app.services.guest_service import claim_guest_score_for_today
 from app.services.user_service import (
-    DisplayNameTakenError,
     create_google_identity,
     create_password_identity,
     create_user_with_identity,
     find_identity,
-    find_user_by_display_name_lower,
+    generate_display_name,
     get_or_create_user_for_identity,
     get_user,
     mark_email_verified,
@@ -54,7 +53,6 @@ def sign_in_with_google(google_id_token: str, guest_access_token: str | None = N
     user = get_or_create_user_for_identity(
         provider="google",
         provider_subject=claims["sub"],
-        display_name=claims.get("name", "Player"),
         email=claims.get("email"),
         email_verified=True,
     )
@@ -70,18 +68,16 @@ def sign_in_with_google(google_id_token: str, guest_access_token: str | None = N
 
 
 def register_with_password(
-    email: str, password: str, display_name: str, guest_access_token: str | None = None
+    email: str, password: str, guest_access_token: str | None = None
 ) -> tuple[dict, str, str]:
     normalized_email = _normalize_email(email)
     if find_identity("password", normalized_email) is not None:
         raise EmailAlreadyRegisteredError(normalized_email)
-    if find_user_by_display_name_lower(display_name.strip().lower()) is not None:
-        raise DisplayNameTakenError(display_name)
 
     user = create_user_with_identity(
         provider="password",
         provider_subject=normalized_email,
-        display_name=display_name,
+        display_name=generate_display_name(),
         password_hash=hash_password(password),
         email=normalized_email,
         email_verified=False,

@@ -27,10 +27,7 @@ def validate_display_name_no_at(display_name: str) -> str:
 class RegisterRequest(BaseModel):
     email: str = Field(min_length=3, max_length=320)
     password: str = Field(min_length=8, max_length=128)
-    display_name: str = Field(min_length=1, max_length=50)
     guest_access_token: str | None = None
-
-    _validate_display_name = field_validator("display_name")(validate_display_name_no_at)
 
 
 class LoginRequest(BaseModel):

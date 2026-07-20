@@ -2,10 +2,10 @@ from app.services.score_service import get_user_score_item
 from app.services.user_service import mark_email_verified
 
 
-def _register(client, email, display_name):
+def _register(client, email):
     response = client.post(
         "/v1/auth/register",
-        json={"email": email, "password": "correct-horse", "display_name": display_name},
+        json={"email": email, "password": "correct-horse"},
     )
     assert response.status_code == 201, response.text
     return {"Authorization": f"Bearer {response.json()['access_token']}"}
@@ -23,14 +23,14 @@ def test_reset_progress_requires_auth(client):
 
 def test_developer_flag_reflected_on_profile(client, auth_headers):
     tom = auth_headers("Tom")
-    dev = _register(client, "dunkertheepic13@gmail.com", "Dev")
+    dev = _register(client, "dunkertheepic13@gmail.com")
 
     assert client.get("/v1/users/me", headers=tom).json()["is_developer"] is False
     assert client.get("/v1/users/me", headers=dev).json()["is_developer"] is True
 
 
 def test_developer_can_reset_todays_progress(client):
-    dev = _register(client, "dunkertheepic13@gmail.com", "Dev")
+    dev = _register(client, "dunkertheepic13@gmail.com")
     dev_id = client.get("/v1/users/me", headers=dev).json()["user_id"]
     mark_email_verified(dev_id)
 
@@ -47,7 +47,7 @@ def test_developer_can_reset_todays_progress(client):
 
 
 def test_reset_progress_only_clears_developers_own_scores(client, auth_headers):
-    dev = _register(client, "dunkertheepic13@gmail.com", "Dev")
+    dev = _register(client, "dunkertheepic13@gmail.com")
     dev_id = client.get("/v1/users/me", headers=dev).json()["user_id"]
     mark_email_verified(dev_id)
     tom = auth_headers("Tom")
