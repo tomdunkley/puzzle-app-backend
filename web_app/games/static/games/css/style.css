@@ -259,9 +259,9 @@ input, textarea, select { font-family: inherit; }
   align-items: center;
   justify-content: center;
 }
-.game-card-icon svg { width: 48px; height: 48px; }
-.game-card-words  .game-card-icon svg { fill: var(--words-color); }
-.game-card-numbers .game-card-icon svg { fill: var(--numbers-color); }
+.game-card-icon .material-symbols-outlined { font-size: 48px; }
+.game-card-words  .game-card-icon .material-symbols-outlined { color: var(--words-color); }
+.game-card-numbers .game-card-icon .material-symbols-outlined { color: var(--numbers-color); }
 
 .game-card-text h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.2px; }
 .game-card-text p  { font-size: 0.88rem; color: var(--ink-mid); line-height: 1.45; margin: 0; }
@@ -354,6 +354,7 @@ input, textarea, select { font-family: inherit; }
 .board-cell:hover { background: var(--border); }
 .board-cell.selected { background: var(--words-color); color: #fff; border-color: var(--words-color); }
 .board-cell.path-end { background: var(--words-color); color: #fff; box-shadow: inset 0 0 0 3px rgba(255,255,255,0.35); border-color: var(--words-color); }
+.board-readonly .board-cell { cursor: default; pointer-events: none; }
 
 .current-word-wrap {
   min-height: 44px;

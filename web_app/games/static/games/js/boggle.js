@@ -72,6 +72,14 @@
     }, 1000);
   }
 
+  function renderReadOnlyBoard(letters, containerId) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = letters.map(l =>
+      `<div class="board-cell" style="cursor:default;pointer-events:none">${l.toUpperCase()}</div>`
+    ).join('');
+  }
+
   function renderBoard() {
     const boardEl = document.getElementById('board');
     boardEl.innerHTML = '';
@@ -226,6 +234,7 @@
 
   async function showResults(allWords, validWords, puzzleId) {
     show('state-results');
+    renderReadOnlyBoard(board, 'results-board');
     const displayWords = validWords || allWords;
     const score = calcScore(displayWords);
     const invalid = validWords ? allWords.length - validWords.length : 0;
@@ -267,6 +276,8 @@
     show('state-already-played');
     const score = data.your_score || 0;
     document.getElementById('already-score').textContent = `${score} points`;
+    const boardLetters = Array.isArray(data.board?.[0]) ? data.board.flat() : (data.board || []);
+    renderReadOnlyBoard(boardLetters, 'already-board');
 
     // Try to load the valid_words from score detail
     let validWords = null;

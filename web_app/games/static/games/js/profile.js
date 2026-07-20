@@ -77,17 +77,18 @@
     const emptyEl = document.getElementById('trophies-empty');
     const badgeEl = document.getElementById('trophy-count-badge');
     try {
-      const trophies = await API.get('v1/users/me/achievements');
-      const earned = trophies.filter(t => t.earned_at);
+      const resp = await API.get('v1/users/me/achievements');
+      const trophies = resp.achievements || [];
+      const earned = trophies.filter(t => t.unlocked_at);
       badgeEl.textContent = `${earned.length} / ${trophies.length}`;
       if (trophies.length === 0) { emptyEl.style.display = ''; return; }
       gridEl.innerHTML = trophies.map(t => {
-        const isEarned = !!t.earned_at;
+        const isEarned = !!t.unlocked_at;
         return `<div class="trophy-card${isEarned ? '' : ' trophy-locked'}">
           <div class="trophy-icon">${isEarned ? '🏆' : '🔒'}</div>
-          <div class="trophy-name">${API.escHtml(t.name)}</div>
+          <div class="trophy-name">${API.escHtml(t.title)}</div>
           <div class="trophy-desc">${API.escHtml(t.description)}</div>
-          ${isEarned ? `<div class="trophy-date">${new Date(t.earned_at).toLocaleDateString()}</div>` : ''}
+          ${isEarned ? `<div class="trophy-date">${new Date(t.unlocked_at).toLocaleDateString()}</div>` : ''}
         </div>`;
       }).join('');
     } catch (_) { emptyEl.style.display = ''; }
