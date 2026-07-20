@@ -71,10 +71,12 @@ def main():
     if not ok:
         sys.exit(1)
 
+    # Netlify rewrite rule: /users/<username>/ → users/index.html (JS handles routing)
+    (out / '_redirects').write_text('/users/*  /users/index.html  200\n')
+
     print(f'\nDone! web_dist/ is ready.')
     print('Deploy with:')
-    print('  aws s3 sync web_dist/ s3://<bucket-name>/ --delete --profile td-puzzles')
-    print('  aws cloudfront create-invalidation --distribution-id <id> --paths "/*" --profile td-puzzles')
+    print('  netlify deploy --prod --dir web_dist/ --site <site-id>')
 
 
 if __name__ == '__main__':
