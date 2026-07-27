@@ -559,8 +559,8 @@ input, textarea, select { font-family: inherit; }
 .lb-table tr.self-row td { background: var(--surface); font-weight: 600; }
 .lb-table .rank-col { width: 32px; color: var(--ink-light); font-size: 0.82rem; }
 .lb-table .score-col { text-align: right; font-weight: 700; }
-.lb-auth-gate { padding: 24px 0; color: var(--ink-mid); font-size: 0.88rem; }
-.lb-auth-gate a { color: var(--ink); font-weight: 600; }
+.lb-auth-gate { padding: 24px 0; }
+.lb-auth-gate .btn { text-align: center; }
 
 .you-badge {
   display: inline-block;

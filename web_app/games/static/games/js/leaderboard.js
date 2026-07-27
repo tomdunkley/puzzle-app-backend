@@ -10,7 +10,7 @@ const Leaderboard = (() => {
         if (!API.isLoggedIn()) {
             containerEl.innerHTML = `
                 <div class="lb-auth-gate">
-                    <a href="/login/">Sign in</a> to see how you rank against friends.
+                    <a href="/login/" class="btn btn-primary btn-full">Sign in to save your streak and see how you rank against friends.</a>
                 </div>`;
             return;
         }
