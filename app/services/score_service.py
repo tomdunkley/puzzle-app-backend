@@ -90,8 +90,15 @@ def submit_score(
     # so the two disappear together, rather than tracking a second TTL clock.
     if is_guest and user is not None and "guest_expires_at_epoch" in user:
         item["guest_expires_at_epoch"] = user["guest_expires_at_epoch"]
+
+    # Compare against best from OTHER daily puzzles (exclude today) to decide if this
+    # score is a new all-time daily best.
+    other_daily = [s for s in get_daily_scores_for_user(user_id, game) if s["puzzle_id"] != puzzle_id]
+    best_other = max(other_daily, key=_ranking_key) if other_daily else None
+    is_new_daily_best = best_other is None or _ranking_key(item) > _ranking_key(best_other)
+
     scores_table.put_item(Item=item)
-    return {**item, "current_streak": _current_streak(user_id, game), "is_new_daily_best": True}
+    return {**item, "current_streak": _current_streak(user_id, game), "is_new_daily_best": is_new_daily_best}
 
 
 def _current_streak(user_id: str, game: str) -> int:
