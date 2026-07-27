@@ -146,8 +146,8 @@ def has_played(puzzle_id: str, user_id: str) -> bool:
 
 def _counts_toward_global_rank(user: dict | None) -> bool:
     if user is None:
-        return True
-    if user.get("is_test_account"):
+        return False
+    if user.get("is_guest") or user.get("is_test_account"):
         return False
     return user.get("visible_on_global_leaderboard", True)
 
@@ -269,7 +269,7 @@ def get_global_leaderboard(puzzle_id: str, limit: int = 10) -> list[dict]:
     entries = []
     for item in scores:
         user = get_user(item["user_id"])
-        if user is not None and (user.get("is_guest") or not user.get("visible_on_global_leaderboard", True) or user.get("is_test_account")):
+        if not _counts_toward_global_rank(user):
             continue
         entries.append(_leaderboard_entry(len(entries) + 1, item, user))
         if len(entries) >= limit:
