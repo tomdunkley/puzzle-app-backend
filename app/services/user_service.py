@@ -255,6 +255,15 @@ def get_or_create_user_for_identity(
 _VALID_ICON_COLORS = frozenset({"black", "white", "silver"})
 
 
+def record_last_login(user_id: str, platform: str) -> None:
+    """Records last_login_at and last_login_platform on the user row."""
+    users_table.update_item(
+        Key={"user_id": user_id},
+        UpdateExpression="SET last_login_at = :at, last_login_platform = :pl",
+        ExpressionAttributeValues={":at": _now_iso(), ":pl": platform},
+    )
+
+
 def update_profile(
     user_id: str,
     display_name: str | None = None,

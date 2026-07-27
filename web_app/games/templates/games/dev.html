@@ -12,10 +12,19 @@
     <a href="/" class="btn btn-secondary">Go Home</a>
   </div>
   <div id="dev-content" style="display:none">
-    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap">
       <h2 style="font-size:1.1rem; font-weight:700">Users</h2>
       <span id="dev-user-count" class="badge"></span>
       <button class="btn btn-secondary btn-sm" id="dev-refresh-btn" style="margin-left:auto">Refresh</button>
+    </div>
+    <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; align-items:center">
+      <input id="dev-search" type="text" placeholder="Search name / email…" style="flex:1; min-width:180px; padding:6px 10px; font-size:0.85rem; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--ink)">
+      <select id="dev-type-filter" style="padding:6px 10px; font-size:0.85rem; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--ink)">
+        <option value="all">All</option>
+        <option value="real">Real</option>
+        <option value="guest">Guest</option>
+        <option value="dev">Developer</option>
+      </select>
     </div>
     <div id="dev-error" style="display:none">
       <p class="alert alert-error" id="dev-error-msg"></p>
@@ -32,11 +41,17 @@
             <th>Visible</th>
             <th>Guest</th>
             <th>Created</th>
+            <th>Last Login</th>
             <th class="actions-col">Actions</th>
           </tr>
         </thead>
         <tbody id="dev-users-tbody"></tbody>
       </table>
+    </div>
+    <div id="dev-pagination" style="display:flex; align-items:center; gap:10px; margin-top:12px; font-size:0.85rem; color:var(--ink-mid)">
+      <button class="btn btn-secondary btn-sm" id="dev-prev-btn">← Prev</button>
+      <span id="dev-page-info"></span>
+      <button class="btn btn-secondary btn-sm" id="dev-next-btn">Next →</button>
     </div>
   </div>
 </div>

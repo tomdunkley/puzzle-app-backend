@@ -55,7 +55,7 @@ def list_users(user_id: str = Depends(get_current_user_id)):
     safe_fields = [
         "user_id", "display_name", "email", "email_verified", "is_guest",
         "is_developer", "visible_on_global_leaderboard", "created_at",
-        "avatar_id", "avatar_color_id",
+        "avatar_id", "avatar_color_id", "last_login_at", "last_login_platform",
     ]
     return [
         {k: u.get(k) for k in safe_fields}

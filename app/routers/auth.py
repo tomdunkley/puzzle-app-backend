@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.auth.dependency import get_current_user_id
 from app.auth.google import GoogleTokenError
@@ -47,6 +47,7 @@ from app.services.user_service import (
     get_email_verified,
     get_user,
     mark_email_verified,
+    record_last_login,
 )
 from app.services.verification_service import (
     ResendCooldownError,
@@ -60,10 +61,15 @@ from app.services.verification_service import (
 router = APIRouter()
 
 
+def _detect_platform(request: Request) -> str:
+    ua = request.headers.get("user-agent", "")
+    return "app" if "okhttp" in ua.lower() else "web"
+
+
 @router.post("/auth/google", response_model=TokenPair)
-def google_sign_in(body: GoogleSignInRequest):
+def google_sign_in(body: GoogleSignInRequest, request: Request):
     try:
-        _user, access_token, refresh_token = sign_in_with_google(body.id_token, body.guest_access_token)
+        user, access_token, refresh_token = sign_in_with_google(body.id_token, body.guest_access_token)
     except GoogleTokenError as exc:
         raise HTTPException(status_code=401, detail=f"invalid Google token: {exc}") from exc
     except EmailTakenError as exc:
@@ -71,30 +77,33 @@ def google_sign_in(body: GoogleSignInRequest):
             status_code=409,
             detail="an account with this email already exists -- sign in and link Google from Settings instead",
         ) from exc
+    record_last_login(user["user_id"], _detect_platform(request))
     return TokenPair(access_token=access_token, refresh_token=refresh_token)
 
 
 @router.post("/auth/register", response_model=TokenPair, status_code=201)
-def register(body: RegisterRequest):
+def register(body: RegisterRequest, request: Request):
     try:
-        _user, access_token, refresh_token = register_with_password(
+        user, access_token, refresh_token = register_with_password(
             body.email, body.password, body.guest_access_token
         )
     except EmailAlreadyRegisteredError as exc:
         raise HTTPException(status_code=409, detail="email already registered") from exc
     except EmailTakenError as exc:
         raise HTTPException(status_code=409, detail="email already registered") from exc
+    record_last_login(user["user_id"], _detect_platform(request))
     return TokenPair(access_token=access_token, refresh_token=refresh_token)
 
 
 @router.post("/auth/login", response_model=TokenPair)
-def login(body: LoginRequest):
+def login(body: LoginRequest, request: Request):
     try:
-        _user, access_token, refresh_token = login_with_password(
+        user, access_token, refresh_token = login_with_password(
             body.email, body.password, body.guest_access_token
         )
     except InvalidCredentialsError as exc:
         raise HTTPException(status_code=401, detail="invalid email or password") from exc
+    record_last_login(user["user_id"], _detect_platform(request))
     return TokenPair(access_token=access_token, refresh_token=refresh_token)
 
 
