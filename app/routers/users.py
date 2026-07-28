@@ -98,6 +98,12 @@ def _today_score(user_id: str, game: str) -> TodayGameScore | None:
             duration_seconds=item.get("duration_seconds"),
             puzzle_id=puzzle_id,
         )
+    if game == "routes":
+        return TodayGameScore(
+            game=game,
+            duration_seconds=item.get("duration_seconds"),
+            puzzle_id=puzzle_id,
+        )
     return TodayGameScore(
         game=game,
         score=item.get("score"),
@@ -115,6 +121,12 @@ def _daily_best_score(user_id: str, game: str) -> DailyBestScore | None:
             game=game,
             result_value=item.get("result_value"),
             distance=item.get("distance"),
+            duration_seconds=item.get("duration_seconds"),
+            puzzle_id=item["puzzle_id"],
+        )
+    if game == "routes":
+        return DailyBestScore(
+            game=game,
             duration_seconds=item.get("duration_seconds"),
             puzzle_id=item["puzzle_id"],
         )
@@ -142,8 +154,10 @@ def get_user_profile_by_name(name_slug: str, requesting_user_id: str = Depends(g
         friendship_status=get_friendship_status(requesting_user_id, user_id),
         today_boggle=_today_score(user_id, "boggle"),
         today_numbers=_today_score(user_id, "numbers"),
+        today_routes=_today_score(user_id, "routes"),
         boggle_daily_best=_daily_best_score(user_id, "boggle"),
         numbers_daily_best=_daily_best_score(user_id, "numbers"),
+        routes_daily_best=_daily_best_score(user_id, "routes"),
         trophy_count=len(unlocked),
         total_trophies=len(ACHIEVEMENTS),
     )
@@ -164,8 +178,10 @@ def get_user_profile(user_id: str, requesting_user_id: str = Depends(get_current
         friendship_status=get_friendship_status(requesting_user_id, user_id),
         today_boggle=_today_score(user_id, "boggle"),
         today_numbers=_today_score(user_id, "numbers"),
+        today_routes=_today_score(user_id, "routes"),
         boggle_daily_best=_daily_best_score(user_id, "boggle"),
         numbers_daily_best=_daily_best_score(user_id, "numbers"),
+        routes_daily_best=_daily_best_score(user_id, "routes"),
         trophy_count=len(unlocked),
         total_trophies=len(ACHIEVEMENTS),
     )

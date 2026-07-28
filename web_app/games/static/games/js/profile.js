@@ -13,6 +13,8 @@
     star_icon: '⭐', shield: '🛡️', coffee: '☕', anchor: '⚓',
     heart: '❤️', music: '🎵', snowflake: '❄️', sun_icon: '☀️',
     lotus: '🌸', pizza: '🍕', cake: '🎂', egg: '🥚', raven: '🐦',
+    route: '🛤️', map: '🗺️', compass: '🧭', trail: '🌿', globe: '🌐',
+    mountain: '⛰️', wave: '🌊', mouse: '🐭', tree: '🌳', car: '🚗',
   };
 
   const COLOR_HEX = {
@@ -38,7 +40,8 @@
     if (t.unlocked_at) return 0;
     if (!t.id.includes('streak')) return 1;
     if (t.id.startsWith('words_streak')) return 2;
-    return 3;
+    if (t.id.startsWith('numbers_streak')) return 3;
+    return 4;
   }
 
   // ── Helpers ──────────────────────────────────────────────────────
@@ -54,6 +57,12 @@
     return (name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   }
 
+  function fmtTime(s) {
+    if (s == null) return '?';
+    const m = Math.floor(s / 60);
+    return m > 0 ? `${m}m ${String(s % 60).padStart(2, '0')}s` : `${s}s`;
+  }
+
   function fmtScore(game, today) {
     if (!today) return 'Not played today';
     if (game === 'numbers') {
@@ -61,6 +70,7 @@
       if (d === 0) return `Exact! (${today.duration_seconds ?? 0}s)`;
       return `${today.result_value ?? '?'} (${d} away)`;
     }
+    if (game === 'routes') return fmtTime(today.duration_seconds);
     return `${today.score ?? 0} pts (${today.word_count ?? 0} words)`;
   }
 
@@ -71,6 +81,7 @@
       if (d === 0) return 'Best: Exact!';
       return `Best: ${best.result_value} (${d} away)`;
     }
+    if (game === 'routes') return `Best: ${fmtTime(best.duration_seconds)}`;
     return `Best: ${best.score} pts (${best.word_count ?? 0} words)`;
   }
 
@@ -110,6 +121,8 @@
       document.getElementById('words-best-score').textContent = fmtBest('boggle', pub.boggle_daily_best);
       document.getElementById('numbers-today-score').textContent = fmtScore('numbers', pub.today_numbers);
       document.getElementById('numbers-best-score').textContent = fmtBest('numbers', pub.numbers_daily_best);
+      document.getElementById('routes-today-score').textContent = fmtScore('routes', pub.today_routes);
+      document.getElementById('routes-best-score').textContent = fmtBest('routes', pub.routes_daily_best);
     } catch (_) { /* ignore */ }
   }
 

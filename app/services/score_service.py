@@ -24,12 +24,16 @@ def _ranking_key(item: dict) -> tuple[int, int]:
     """Higher is always better, so every caller can sort(reverse=True) regardless of
     game. Boggle ties on score are broken by word count. Numbers ranks by closeness
     to the target (so distance is negated -- 0 away is the best possible) and ties
-    on an exact match are broken by who took less time.
+    on an exact match are broken by who took less time. Routes ranks by fastest time
+    (negated so lower duration = higher ranking key).
     """
     if item.get("game") == "numbers":
         distance = item.get("distance", 10**9)
         duration = item.get("duration_seconds", 10**9)
         return (-distance, -duration)
+    if item.get("game") == "routes":
+        duration = item.get("duration_seconds", 10**9)
+        return (-duration, 0)
     return (item.get("score", 0), len(item.get("valid_words", [])))
 
 
@@ -59,6 +63,9 @@ def submit_score(
             "distance": validated["distance"],
             "steps": validated["steps"],
         }
+    elif game == "routes":
+        # Routes puzzles are generated and solved client-side; backend just records duration.
+        new_fields = {"game": "routes"}
     else:
         valid_words, score = score_words(puzzle["board"], words or [])
         new_fields = {"game": "boggle", "score": score, "valid_words": valid_words}
@@ -218,6 +225,8 @@ def get_score_detail(puzzle_id: str, user_id: str, requesting_user_id: str) -> d
                 "steps": item.get("steps", []) if not locked else None,
             }
         )
+    elif game == "routes":
+        detail.update({"duration_seconds": item.get("duration_seconds")})
     else:
         detail.update(
             {
@@ -242,6 +251,8 @@ def _leaderboard_entry(rank: int, item: dict, user: dict | None) -> dict:
     if entry["game"] == "numbers":
         entry["result_value"] = item.get("result_value")
         entry["distance"] = item.get("distance")
+        entry["duration_seconds"] = item.get("duration_seconds")
+    elif entry["game"] == "routes":
         entry["duration_seconds"] = item.get("duration_seconds")
     else:
         entry["score"] = item.get("score", 0)

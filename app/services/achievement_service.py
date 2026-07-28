@@ -99,6 +99,8 @@ def check_and_award_on_score(
         newly.append("play_numbers")
     if game == "boggle" and "play_words" not in already:
         newly.append("play_words")
+    if game == "routes" and "play_routes" not in already:
+        newly.append("play_routes")
 
     # --- global rank ---
     if rank_today == 1 and "rank_first_global" not in already:
@@ -131,11 +133,38 @@ def check_and_award_on_score(
 
     # --- streak milestones ---
     if current_streak is not None:
-        streak_key = "numbers" if game == "numbers" else "words"
+        if game == "numbers":
+            streak_key = "numbers"
+        elif game == "routes":
+            streak_key = "routes"
+        else:
+            streak_key = "words"
         for days in (5, 10, 25, 100, 250, 365, 500, 1000):
             aid = f"{streak_key}_streak_{days}"
             if current_streak >= days and aid not in already and aid in ACHIEVEMENTS:
                 newly.append(aid)
+
+    # --- routes grid-size trophies ---
+    if game == "routes" and puzzle_id is not None:
+        try:
+            from datetime import date as _dt
+            date_iso = puzzle_id.replace("routes_", "", 1)
+            d = _dt.fromisoformat(date_iso)
+            dow = d.weekday()  # 0=Mon, 6=Sun
+            if dow == 0:
+                grid_size = 4
+            elif dow in (5, 6):
+                grid_size = 6
+            else:
+                grid_size = 5
+            if grid_size == 4 and "maze_for_mice" not in already:
+                newly.append("maze_for_mice")
+            elif grid_size == 5 and "walk_in_the_park" not in already:
+                newly.append("walk_in_the_park")
+            elif grid_size == 6 and "roadtrip" not in already:
+                newly.append("roadtrip")
+        except Exception:
+            pass
 
     # --- boggle word achievements ---
     if game == "boggle":

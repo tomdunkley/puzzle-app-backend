@@ -4,6 +4,12 @@
   // Extract name slug from URL path, e.g. /users/tomdunkley/ → "tomdunkley"
   const nameSlug = (window.location.pathname.match(/\/users\/([^/]+)\//) || [])[1];
 
+  function fmtTime(s) {
+    if (s == null) return '?';
+    const m = Math.floor(s / 60);
+    return m > 0 ? `${m}m ${String(s % 60).padStart(2, '0')}s` : `${s}s`;
+  }
+
   function fmtScore(game, today) {
     if (!today) return 'Not played today';
     if (game === 'numbers') {
@@ -11,6 +17,7 @@
       if (d === 0) return `Exact! (${today.duration_seconds ?? 0}s)`;
       return `${today.result_value ?? '?'} (${d} away)`;
     }
+    if (game === 'routes') return fmtTime(today.duration_seconds);
     return `${today.score ?? 0} pts (${today.word_count ?? 0} words)`;
   }
 
@@ -21,6 +28,7 @@
       if (d === 0) return 'Best: Exact!';
       return `Best: ${best.result_value} (${d} away)`;
     }
+    if (game === 'routes') return `Best: ${fmtTime(best.duration_seconds)}`;
     return `Best: ${best.score} pts (${best.word_count ?? 0} words)`;
   }
 
@@ -112,6 +120,8 @@
       document.getElementById('up-words-best').textContent = fmtBest('boggle', profile.boggle_daily_best);
       document.getElementById('up-numbers-today').textContent = fmtScore('numbers', profile.today_numbers);
       document.getElementById('up-numbers-best').textContent = fmtBest('numbers', profile.numbers_daily_best);
+      document.getElementById('up-routes-today').textContent = fmtScore('routes', profile.today_routes);
+      document.getElementById('up-routes-best').textContent = fmtBest('routes', profile.routes_daily_best);
 
       // Trophies — load full list
       const trophyBadge = document.getElementById('up-trophy-badge');

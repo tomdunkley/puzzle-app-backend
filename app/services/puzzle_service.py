@@ -16,6 +16,11 @@ GAMES = [
         "title": "Numbers",
         "description": "Combine six numbers to hit the target.",
     },
+    {
+        "game": "routes",
+        "title": "Routes",
+        "description": "Use the number of cells in each row and column to find the path.",
+    },
 ]
 
 DEFAULT_DURATION_SECONDS = 90
@@ -34,6 +39,9 @@ def today_iso() -> str:
     if now.hour < 8:
         return (now.date() - timedelta(days=1)).isoformat()
     return now.date().isoformat()
+
+
+ROUTES_DURATION_SECONDS = 0  # routes is untimed
 
 
 def _precompute_future_puzzles(today_date_iso: str, game: str, days_ahead: int = 5) -> None:
@@ -57,6 +65,13 @@ def _precompute_future_puzzles(today_date_iso: str, game: str, days_ahead: int =
                 "target": round_["target"],
                 "solution": round_["solution"],
                 "duration_seconds": NUMBERS_DURATION_SECONDS,
+            })
+        elif game == "routes":
+            puzzles_table.put_item(Item={
+                "puzzle_id": future_id,
+                "game": game,
+                "date": future_date,
+                "duration_seconds": ROUTES_DURATION_SECONDS,
             })
         else:
             board = generate_board(seed=future_id)
@@ -95,6 +110,16 @@ def get_or_create_today_puzzle(game: str) -> dict:
             "target": round_["target"],
             "solution": round_["solution"],
             "duration_seconds": NUMBERS_DURATION_SECONDS,
+        }
+    elif game == "routes":
+        # Routes puzzles are generated deterministically on the client from the
+        # puzzle_id seed. Backend only stores the placeholder so the puzzle exists
+        # and streak/already-played tracking works correctly.
+        puzzle = {
+            "puzzle_id": puzzle_id,
+            "game": game,
+            "date": date_iso,
+            "duration_seconds": ROUTES_DURATION_SECONDS,
         }
     else:
         board = generate_board(seed=puzzle_id)

@@ -29,6 +29,16 @@ def _to_response(puzzle: dict, user_id: str) -> Puzzle:
             your_distance=score_item.get("distance") if score_item else None,
         )
 
+    if puzzle["game"] == "routes":
+        return Puzzle(
+            puzzle_id=puzzle["puzzle_id"],
+            game=puzzle["game"],
+            date=puzzle["date"],
+            duration_seconds=puzzle["duration_seconds"],
+            already_played=score_item is not None,
+            streak=streak,
+        )
+
     return Puzzle(
         puzzle_id=puzzle["puzzle_id"],
         game=puzzle["game"],

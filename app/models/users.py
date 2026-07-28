@@ -65,7 +65,9 @@ class PublicUserProfile(BaseModel):
     friendship_status: str  # "none" | "friends" | "request_sent" | "request_received"
     today_boggle: TodayGameScore | None = None
     today_numbers: TodayGameScore | None = None
+    today_routes: TodayGameScore | None = None
     boggle_daily_best: DailyBestScore | None = None
     numbers_daily_best: DailyBestScore | None = None
+    routes_daily_best: DailyBestScore | None = None
     trophy_count: int = 0
     total_trophies: int = 0

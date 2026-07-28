@@ -9,8 +9,10 @@
   --border-dark: #1C1008;
   --words-color:   #E65100;
   --numbers-color: #1976D2;
+  --routes-color:  #2E7D32;
   --words-accent:  #FFF3E0;
   --numbers-accent: #E3F2FD;
+  --routes-accent: #E8F5E9;
   --error:       #c0392b;
   --error-bg:    #fdf0ee;
   --success:     #1a6b2e;
@@ -258,6 +260,7 @@ input, textarea, select { font-family: inherit; }
 
 .game-card-words  { background: var(--words-accent); }
 .game-card-numbers { background: var(--numbers-accent); }
+.game-card-routes { background: var(--routes-accent); }
 
 .game-card-icon {
   width: 64px;
@@ -270,6 +273,7 @@ input, textarea, select { font-family: inherit; }
 .game-card-icon .material-symbols-outlined { font-size: 48px; }
 .game-card-words  .game-card-icon .material-symbols-outlined { color: var(--words-color); }
 .game-card-numbers .game-card-icon .material-symbols-outlined { color: var(--numbers-color); }
+.game-card-routes .game-card-icon .material-symbols-outlined { color: var(--routes-color); }
 
 .game-card-text h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.2px; }
 .game-card-text p  { font-size: 0.88rem; color: var(--ink-mid); line-height: 1.45; margin: 0; }
@@ -286,6 +290,7 @@ input, textarea, select { font-family: inherit; }
 .game-header h1 { font-size: 1.3rem; font-weight: 700; flex: 1; }
 .game-header .game-color-words { color: var(--words-color); }
 .game-header .game-color-numbers { color: var(--numbers-color); }
+.game-header .game-color-routes { color: var(--routes-color); }
 
 .game-meta { display: flex; align-items: center; gap: 12px; }
 
@@ -648,9 +653,11 @@ input, textarea, select { font-family: inherit; }
 }
 .game-score-card-words { border-left: 3px solid var(--words-color); }
 .game-score-card-numbers { border-left: 3px solid var(--numbers-color); }
+.game-score-card-routes { border-left: 3px solid var(--routes-color); }
 .game-score-card h4 { font-size: 0.82rem; font-weight: 700; margin-bottom: 6px; }
 .game-score-card-words h4 { color: var(--words-color); }
 .game-score-card-numbers h4 { color: var(--numbers-color); }
+.game-score-card-routes h4 { color: var(--routes-color); }
 .game-score-today { font-size: 0.88rem; margin-bottom: 2px; }
 .game-score-best { font-size: 0.78rem; color: var(--ink-mid); }
 
@@ -780,3 +787,31 @@ input, textarea, select { font-family: inherit; }
 
 /* ── Share message ──────────────────────────────────────────────── */
 .share-msg { font-size: 0.82rem; color: var(--ink-mid); margin-top: 8px; display: none; }
+
+/* ── Routes game ────────────────────────────────────────────────── */
+.routes-canvas-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto 16px;
+  touch-action: none;
+  user-select: none;
+}
+.routes-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  cursor: crosshair;
+}
+.routes-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.routes-result-headline { font-size: 1.3rem; font-weight: 700; margin-bottom: 4px; }
+.routes-result-sub { color: var(--ink-mid); font-size: 0.88rem; margin-bottom: 16px; }

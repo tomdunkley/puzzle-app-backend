@@ -18,6 +18,9 @@ def words(request):
 def numbers(request):
     return render(request, 'games/numbers.html', _ctx())
 
+def routes(request):
+    return render(request, 'games/routes.html', _ctx())
+
 def profile(request):
     return render(request, 'games/profile.html', _ctx())
 

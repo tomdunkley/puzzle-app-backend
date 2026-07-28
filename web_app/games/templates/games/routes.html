@@ -1,0 +1,48 @@
+{% extends "games/base.html" %}
+{% load static %}
+{% block title %}Routes — td Puzzles{% endblock %}
+{% block content %}
+<div class="game-page">
+  <div class="game-header">
+    <h1 class="game-color-routes">Routes</h1>
+    <div class="game-meta">
+      <span id="timer" style="display:none; font-variant-numeric:tabular-nums; font-weight:600"></span>
+    </div>
+  </div>
+
+  <div id="state-loading" class="state-panel">
+    <p style="color:var(--ink-mid)">Loading today's puzzle…</p>
+  </div>
+
+  <div id="state-already-played" class="state-panel" style="display:none">
+    <div class="routes-result-headline" id="already-headline"></div>
+    <div class="routes-result-sub" id="already-sub"></div>
+    <div class="routes-canvas-wrap"><canvas id="already-canvas"></canvas></div>
+    <div id="already-leaderboard" class="leaderboard-section"></div>
+  </div>
+
+  <div id="state-playing" style="display:none">
+    <div class="routes-canvas-wrap">
+      <canvas id="play-canvas"></canvas>
+    </div>
+    <div class="routes-actions">
+      <button class="btn btn-ghost btn-sm" id="clear-path-btn" style="flex:1">Clear Path</button>
+    </div>
+  </div>
+
+  <div id="state-results" class="state-panel" style="display:none">
+    <div class="routes-result-headline" id="results-headline"></div>
+    <div class="routes-result-sub" id="results-sub"></div>
+    <div class="routes-canvas-wrap"><canvas id="results-canvas"></canvas></div>
+    <div id="results-leaderboard" class="leaderboard-section"></div>
+  </div>
+
+  <div id="state-error" class="state-panel" style="display:none">
+    <p class="alert alert-error" id="error-msg"></p>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="{% static 'games/js/leaderboard.js' %}"></script>
+<script src="{% static 'games/js/routes.js' %}"></script>
+{% endblock %}
