@@ -129,7 +129,7 @@ ACHIEVEMENTS: dict[str, dict] = {
     "words_streak_1000": {
         "title": "Words God",
         "description": "Reach a 1000-day Words streak.",
-        "unlocks_color_id": "yellow",
+        "unlocks_color_id": "sky",
     },
     "play_routes": {
         "title": "Routes",
@@ -164,7 +164,7 @@ ACHIEVEMENTS: dict[str, dict] = {
     "routes_streak_365": {
         "title": "Year of Routes",
         "description": "Reach a 365-day Routes streak.",
-        "unlocks_color_id": "sky",
+        "unlocks_color_id": "brown",
     },
     "routes_streak_500": {
         "title": "Routes Master",

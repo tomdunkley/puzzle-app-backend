@@ -34,7 +34,7 @@ VALID_AVATAR_IDS = frozenset(
 _AVATAR_ID_LIST = sorted(VALID_AVATAR_IDS)
 
 # Base colors (always available) + achievement-unlocked colors.
-VALID_AVATAR_COLOR_IDS = frozenset({"red", "green", "blue", "orange", "gold", "black", "silver", "purple", "teal", "pink", "lime", "yellow", "sky", "indigo"})
+VALID_AVATAR_COLOR_IDS = frozenset({"red", "green", "blue", "orange", "gold", "black", "silver", "purple", "teal", "pink", "lime", "sky", "brown", "indigo"})
 _AVATAR_COLOR_ID_LIST = sorted(VALID_AVATAR_COLOR_IDS)
 
 
