@@ -41,7 +41,8 @@
     if (!t.id.includes('streak')) return 1;
     if (t.id.startsWith('words_streak')) return 2;
     if (t.id.startsWith('numbers_streak')) return 3;
-    return 4;
+    if (t.id.startsWith('routes_streak')) return 4;
+    return 5;
   }
 
   // ── Helpers ──────────────────────────────────────────────────────

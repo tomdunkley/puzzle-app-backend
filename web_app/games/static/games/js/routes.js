@@ -574,17 +574,14 @@
   async function init() {
     playCanvas = document.getElementById('play-canvas');
 
-    if (!API.isLoggedIn()) {
-      show('state-error');
-      document.getElementById('error-msg').innerHTML =
-        '<a href="/login/">Sign in</a> to play Routes.';
-      return;
-    }
+    await API.ensureSession();
 
-    try {
-      const me = await API.get('v1/users/me');
-      myUserId = me.user_id;
-    } catch (_) {}
+    if (API.isLoggedIn()) {
+      try {
+        const me = await API.get('v1/users/me');
+        myUserId = me.user_id;
+      } catch (_) {}
+    }
 
     let todayPuzzle;
     try {

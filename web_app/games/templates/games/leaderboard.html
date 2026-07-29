@@ -13,33 +13,46 @@
   <div class="tab-bar">
     <button class="tab active" data-tab="boggle">Words</button>
     <button class="tab" data-tab="numbers">Numbers</button>
+    <button class="tab" data-tab="routes">Routes</button>
   </div>
 
-  <div id="tab-boggle" class="tab-content">
-    <div id="boggle-loading" class="state-panel"><p>Loading…</p></div>
-    <div id="boggle-error" class="alert alert-error" style="display:none"></div>
-    <table id="boggle-table" class="leaderboard-table" style="display:none">
-      <thead><tr><th>#</th><th>Player</th><th>Score</th><th>Words</th></tr></thead>
-      <tbody id="boggle-tbody"></tbody>
-    </table>
-    <p id="boggle-empty" style="display:none; color:var(--ink-mid); text-align:center; margin-top:24px">
-      No scores yet. <a href="/friends/">Add some friends</a> to compare!
-    </p>
-  </div>
-
-  <div id="tab-numbers" class="tab-content" style="display:none">
-    <div id="numbers-loading" class="state-panel"><p>Loading…</p></div>
-    <div id="numbers-error" class="alert alert-error" style="display:none"></div>
-    <table id="numbers-table" class="leaderboard-table" style="display:none">
-      <thead><tr><th>#</th><th>Player</th><th>Result</th><th>Steps</th></tr></thead>
-      <tbody id="numbers-tbody"></tbody>
-    </table>
-    <p id="numbers-empty" style="display:none; color:var(--ink-mid); text-align:center; margin-top:24px">
-      No scores yet. <a href="/friends/">Add some friends</a> to compare!
-    </p>
-  </div>
+  <div id="tab-boggle" class="tab-content leaderboard-section"></div>
+  <div id="tab-numbers" class="tab-content leaderboard-section" style="display:none"></div>
+  <div id="tab-routes" class="tab-content leaderboard-section" style="display:none"></div>
 </div>
 {% endblock %}
 {% block extra_scripts %}
 <script src="{% static 'games/js/leaderboard.js' %}"></script>
+<script>
+(() => {
+  const tabs = document.querySelectorAll('.tab-bar .tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(p => p.style.display = 'none');
+      document.getElementById('tab-' + tab.dataset.tab).style.display = '';
+    });
+  });
+
+  const GAMES = [
+    { id: 'boggle',  container: 'tab-boggle',  fmt: e => `${e.score ?? 0} pts (${e.word_count ?? 0} words)` },
+    { id: 'numbers', container: 'tab-numbers', fmt: e => e.distance === 0 ? `Exact! (${e.duration_seconds}s)` : `${e.result_value} (${e.distance} away)` },
+    { id: 'routes',  container: 'tab-routes',  fmt: e => { const s = e.duration_seconds; if (s == null) return '?'; const m = Math.floor(s/60); return m > 0 ? `${m}m ${String(s%60).padStart(2,'0')}s` : `${s}s`; } },
+  ];
+
+  let myUserId = null;
+  API.get('v1/users/me').then(me => { myUserId = me.user_id; }).catch(() => {});
+
+  GAMES.forEach(async ({ id, container, fmt }) => {
+    const el = document.getElementById(container);
+    try {
+      const puzzle = await API.get(`v1/puzzles/today?game=${id}`);
+      Leaderboard.render(el, puzzle.puzzle_id, fmt, myUserId);
+    } catch (e) {
+      el.innerHTML = `<p style="color:var(--ink-mid);padding:16px 0">Couldn't load ${id} leaderboard.</p>`;
+    }
+  });
+})();
+</script>
 {% endblock %}
