@@ -27,6 +27,8 @@ VALID_AVATAR_IDS = frozenset(
         "heart", "music", "snowflake", "sun_icon", "lotus", "pizza",
         # Other achievements
         "cake", "egg", "raven",
+        # Routes achievements
+        "route", "map", "compass", "trail", "globe", "mountain", "wave", "mouse", "tree", "car",
     }
 )
 _AVATAR_ID_LIST = sorted(VALID_AVATAR_IDS)
