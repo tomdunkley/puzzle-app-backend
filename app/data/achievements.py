@@ -139,7 +139,7 @@ ACHIEVEMENTS: dict[str, dict] = {
     "routes_streak_5": {
         "title": "Routes Novice",
         "description": "Reach a 5-day Routes streak.",
-        "unlocks_avatar_id": "map",
+        "unlocks_avatar_id": "train",
     },
     "routes_streak_10": {
         "title": "Routes Regular",
