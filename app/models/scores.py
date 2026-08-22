@@ -15,6 +15,7 @@ class ScoreSubmission(BaseModel):
 class ScoreSubmissionResult(BaseModel):
     score_id: str
     rank_today: int
+    rank_today_is_tied: bool = False
     current_streak: int
     score: int | None = None  # boggle
     valid_words: list[str] | None = None  # boggle
@@ -32,6 +33,7 @@ class ScoreSubmissionResult(BaseModel):
 
 class LeaderboardEntry(BaseModel):
     rank: int
+    is_tied: bool = False
     user_id: str
     display_name: str
     avatar_id: str | None = None
@@ -59,6 +61,7 @@ class ScoreDetail(BaseModel):
     avatar_icon_color: str | None = None
     game: str = "boggle"
     rank_today: int
+    rank_today_is_tied: bool = False
     # True if the requester hasn't completed this puzzle themselves yet -- the board/
     # numbers/target/words/steps fields below are withheld (null) to avoid spoiling it,
     # while score/result_value/distance stay visible (already shown on the leaderboard).

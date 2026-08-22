@@ -35,11 +35,11 @@ def post_score(submission: ScoreSubmission, user_id: str = Depends(get_verified_
     except InvalidNumbersAttemptError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    rank = get_rank(submission.puzzle_id, user_id)
+    rank_info = get_rank(submission.puzzle_id, user_id)
     game = submission.puzzle_id.split("_")[0]
     is_daily = not submission.puzzle_id.startswith(f"{game}_unlimited_")
     newly_unlocked = check_and_award_on_score(
-        user_id, game, rank,
+        user_id, game, rank_info["rank"] if rank_info else None,
         valid_words=item.get("valid_words"),
         validated_steps=item.get("steps"),
         puzzle_id=submission.puzzle_id,
@@ -54,7 +54,8 @@ def post_score(submission: ScoreSubmission, user_id: str = Depends(get_verified_
         daily_best = get_daily_best(user_id, game) or item
     return ScoreSubmissionResult(
         score_id=item["score_id"],
-        rank_today=rank or 0,
+        rank_today=rank_info["rank"] if rank_info else 0,
+        rank_today_is_tied=rank_info["is_tied"] if rank_info else False,
         current_streak=item["current_streak"],
         score=item.get("score"),
         valid_words=item.get("valid_words"),

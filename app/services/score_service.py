@@ -166,12 +166,32 @@ def _counts_toward_global_rank(user: dict | None) -> bool:
     return user.get("visible_on_global_leaderboard", True)
 
 
-def get_rank(puzzle_id: str, user_id: str) -> int | None:
+def _assign_ranks(sorted_scores: list[dict]) -> list[tuple[int, bool]]:
+    """Return (rank, is_tied) for each item in a pre-sorted list.
+    Players with identical ranking keys share the same rank number; the next
+    distinct group starts at the position after all tied entries (standard
+    competition ranking, e.g. 1, 1, 3 rather than 1, 1, 2).
+    """
+    result: list[tuple[int, bool]] = []
+    i = 0
+    while i < len(sorted_scores):
+        j = i + 1
+        while j < len(sorted_scores) and _ranking_key(sorted_scores[j]) == _ranking_key(sorted_scores[i]):
+            j += 1
+        is_tied = j - i > 1
+        for _ in range(i, j):
+            result.append((i + 1, is_tied))
+        i = j
+    return result
+
+
+def get_rank(puzzle_id: str, user_id: str) -> dict | None:
     """The user's global rank for this puzzle -- None if they've opted out of the
     global leaderboard themselves (they shouldn't see a global rank for the same
     reason their own score is excluded from everyone else's). Opted-out users' scores
     are also excluded from the ranking pool entirely, so they never affect anyone
     else's rank either.
+    Returns {"rank": int, "is_tied": bool} or None.
     """
     requester = get_user(user_id)
     if not _counts_toward_global_rank(requester):
@@ -183,9 +203,9 @@ def get_rank(puzzle_id: str, user_id: str) -> int | None:
         if _counts_toward_global_rank(get_user(item["user_id"]))
     ]
     scores.sort(key=_ranking_key, reverse=True)
-    for rank, item in enumerate(scores, start=1):
+    for (rank, is_tied), item in zip(_assign_ranks(scores), scores):
         if item["user_id"] == user_id:
-            return rank
+            return {"rank": rank, "is_tied": is_tied}
     return None
 
 
@@ -203,6 +223,7 @@ def get_score_detail(puzzle_id: str, user_id: str, requesting_user_id: str) -> d
     user = get_user(user_id)
     game = item.get("game", "boggle")
     locked = requesting_user_id != user_id and not has_played(puzzle_id, requesting_user_id)
+    rank_info = get_rank(puzzle_id, user_id)
     detail = {
         "puzzle_id": puzzle_id,
         "user_id": user_id,
@@ -211,7 +232,8 @@ def get_score_detail(puzzle_id: str, user_id: str, requesting_user_id: str) -> d
         "avatar_color_id": user.get("avatar_color_id") if user else None,
         "avatar_icon_color": user.get("avatar_icon_color") if user else None,
         "game": game,
-        "rank_today": get_rank(puzzle_id, user_id) or 0,
+        "rank_today": rank_info["rank"] if rank_info else 0,
+        "rank_today_is_tied": rank_info["is_tied"] if rank_info else False,
         "locked": locked,
     }
     if game == "numbers":
@@ -238,9 +260,10 @@ def get_score_detail(puzzle_id: str, user_id: str, requesting_user_id: str) -> d
     return detail
 
 
-def _leaderboard_entry(rank: int, item: dict, user: dict | None) -> dict:
+def _leaderboard_entry(rank: int, is_tied: bool, item: dict, user: dict | None) -> dict:
     entry = {
         "rank": rank,
+        "is_tied": is_tied,
         "user_id": item["user_id"],
         "display_name": user["display_name"] if user else "Unknown",
         "avatar_id": user.get("avatar_id") if user else None,
@@ -269,8 +292,8 @@ def get_leaderboard(puzzle_id: str, user_ids: set[str] | None = None) -> list[di
     scores = [s for s in scores if not (users[s["user_id"]] or {}).get("is_test_account")]
     scores.sort(key=_ranking_key, reverse=True)
     return [
-        _leaderboard_entry(rank, item, users[item["user_id"]])
-        for rank, item in enumerate(scores, start=1)
+        _leaderboard_entry(rank, is_tied, item, users[item["user_id"]])
+        for (rank, is_tied), item in zip(_assign_ranks(scores), scores)
     ]
 
 
@@ -284,12 +307,16 @@ def get_global_leaderboard(puzzle_id: str, limit: int = 10) -> list[dict]:
     scores = _all_scores_for_puzzle(puzzle_id)
     scores.sort(key=_ranking_key, reverse=True)
 
-    entries = []
+    visible = []
     for item in scores:
         user = get_user(item["user_id"])
         if not _counts_toward_global_rank(user):
             continue
-        entries.append(_leaderboard_entry(len(entries) + 1, item, user))
-        if len(entries) >= limit:
+        visible.append((item, user))
+        if len(visible) >= limit:
             break
-    return entries
+    ranks = _assign_ranks([item for item, _ in visible])
+    return [
+        _leaderboard_entry(rank, is_tied, item, user)
+        for (rank, is_tied), (item, user) in zip(ranks, visible)
+    ]
