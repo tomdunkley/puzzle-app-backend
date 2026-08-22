@@ -46,6 +46,7 @@ def post_score(submission: ScoreSubmission, user_id: str = Depends(get_verified_
         distance=item.get("distance"),
         current_streak=item.get("current_streak"),
         all_computed_values=submission.all_computed_values or [],
+        score=item.get("score"),
     )
     # Fetch the daily best (across ALL daily puzzles) to show in the results screen.
     # Fall back to the just-submitted item if the GSI hasn't propagated yet (first play).

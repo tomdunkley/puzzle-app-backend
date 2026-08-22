@@ -191,6 +191,11 @@ ACHIEVEMENTS: dict[str, dict] = {
         "description": "Complete a 6x6 Routes puzzle.",
         "unlocks_avatar_id": "car",
     },
+    "three_figures": {
+        "title": "Three Figures",
+        "description": "Score 100 or more in a daily Words puzzle.",
+        "unlocks_avatar_id": "skull",
+    },
     "goose_egg": {
         "title": "Goose Egg",
         "description": "Finish a Words game with a score of zero.",

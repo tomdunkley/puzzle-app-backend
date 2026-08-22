@@ -86,6 +86,7 @@ def check_and_award_on_score(
     distance: int | None = None,
     current_streak: int | None = None,
     all_computed_values: list[int] | None = None,
+    score: int | None = None,
 ) -> list[str]:
     """Called after a score is successfully submitted. Returns newly-unlocked achievement IDs."""
     from app.services.puzzle_service import GAMES
@@ -165,6 +166,11 @@ def check_and_award_on_score(
                 newly.append("roadtrip")
         except Exception:
             pass
+
+    # --- boggle score achievements ---
+    is_unlimited = puzzle_id is not None and "_unlimited_" in puzzle_id
+    if game == "boggle" and not is_unlimited and score is not None and score >= 100 and "three_figures" not in already:
+        newly.append("three_figures")
 
     # --- boggle word achievements ---
     if game == "boggle":
