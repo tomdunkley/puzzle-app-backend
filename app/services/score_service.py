@@ -202,6 +202,7 @@ def get_rank(puzzle_id: str, user_id: str) -> dict | None:
         for item in _all_scores_for_puzzle(puzzle_id)
         if _counts_toward_global_rank(get_user(item["user_id"]))
     ]
+    scores.sort(key=lambda x: x.get("submitted_at", ""))
     scores.sort(key=_ranking_key, reverse=True)
     for (rank, is_tied), item in zip(_assign_ranks(scores), scores):
         if item["user_id"] == user_id:
@@ -290,6 +291,7 @@ def get_leaderboard(puzzle_id: str, user_ids: set[str] | None = None) -> list[di
         scores = [item for item in scores if item["user_id"] in user_ids]
     users = {item["user_id"]: get_user(item["user_id"]) for item in scores}
     scores = [s for s in scores if not (users[s["user_id"]] or {}).get("is_test_account")]
+    scores.sort(key=lambda x: x.get("submitted_at", ""))
     scores.sort(key=_ranking_key, reverse=True)
     return [
         _leaderboard_entry(rank, is_tied, item, users[item["user_id"]])
@@ -305,6 +307,7 @@ def get_global_leaderboard(puzzle_id: str, limit: int = 10) -> list[dict]:
     never appears, rather than leaving a gap in the numbering.
     """
     scores = _all_scores_for_puzzle(puzzle_id)
+    scores.sort(key=lambda x: x.get("submitted_at", ""))
     scores.sort(key=_ranking_key, reverse=True)
 
     visible = []
