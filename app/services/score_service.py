@@ -315,9 +315,9 @@ def get_global_leaderboard(puzzle_id: str, limit: int = 10) -> list[dict]:
         user = get_user(item["user_id"])
         if not _counts_toward_global_rank(user):
             continue
-        if len(visible) >= limit and _ranking_key(item) != _ranking_key(visible[-1][0]):
-            break
         visible.append((item, user))
+        if len(visible) >= limit:
+            break
     ranks = _assign_ranks([item for item, _ in visible])
     return [
         _leaderboard_entry(rank, is_tied, item, user)
