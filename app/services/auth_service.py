@@ -165,12 +165,18 @@ def link_google_account(user_id: str, google_id_token: str) -> None:
 
 
 def dev_login(display_name: str) -> tuple[dict, str, str]:
-    """Issues a real token pair for a brand-new user, bypassing identity verification.
+    """Issues tokens for a dev user, creating them on first call and returning the same
+    account on subsequent calls for the same display_name.
 
     Only wired up when ALLOW_DEV_LOGIN=true, so it can never be reached in a real
     deployment. Exists purely so the rest of the authenticated API (scores,
     leaderboards) can be built and tested before the Google OAuth client exists.
     """
+    existing_identity = find_identity("dev", display_name)
+    if existing_identity is not None:
+        user = get_user(existing_identity["user_id"])
+        if user is not None:
+            return user, create_access_token(user["user_id"]), create_refresh_token(user["user_id"])
     user = create_user_with_identity(
         provider="dev",
         provider_subject=display_name,

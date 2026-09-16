@@ -13,6 +13,7 @@ class Settings:
     verification_codes_table: str = os.environ.get("VERIFICATION_CODES_TABLE", "td-puzzles-verification-codes")
     password_reset_codes_table: str = os.environ.get("PASSWORD_RESET_CODES_TABLE", "td-puzzles-password-reset-codes")
     achievements_table: str = os.environ.get("ACHIEVEMENTS_TABLE", "td-puzzles-achievements")
+    challenges_table: str = os.environ.get("CHALLENGES_TABLE", "td-puzzles-challenges")
 
     jwt_secret: str = os.environ.get("JWT_SECRET", "dev-secret-change-me")
     jwt_access_token_minutes: int = int(os.environ.get("JWT_ACCESS_TOKEN_MINUTES", "60"))

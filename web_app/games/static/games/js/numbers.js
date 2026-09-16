@@ -171,7 +171,7 @@
     else if (apiOp === '*') result = a * b;
     else if (apiOp === '/') result = a / b;
 
-    if (!Number.isInteger(result) || result <= 0) {
+    if (!Number.isInteger(result) || result < 0) {
       flashCalc('Not valid');
       return;
     }

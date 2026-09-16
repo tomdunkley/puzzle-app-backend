@@ -4,7 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.auth.dependency import get_current_user_id
-from app.services.dev_service import NotADeveloperError, reset_achievements, reset_todays_progress, unlock_all_achievements
+from app.services.dev_service import (
+    NotADeveloperError,
+    grant_streak_freezes_to_eligible,
+    reset_achievements,
+    reset_todays_progress,
+    streak_freeze_progress,
+    unlock_all_achievements,
+)
 from app.services.user_service import admin_update_user, is_developer, list_all_users
 
 router = APIRouter()
@@ -48,6 +55,15 @@ def reset_achievements_endpoint(user_id: str = Depends(get_current_user_id)):
     return {"status": "ok"}
 
 
+@router.post("/dev/grant-streak-freezes")
+def grant_freezes(user_id: str = Depends(get_current_user_id)):
+    _require_developer(user_id)
+    try:
+        return grant_streak_freezes_to_eligible(user_id)
+    except NotADeveloperError as exc:
+        raise HTTPException(status_code=403, detail="developer access required") from exc
+
+
 @router.get("/dev/users")
 def list_users(user_id: str = Depends(get_current_user_id)):
     _require_developer(user_id)
@@ -58,7 +74,7 @@ def list_users(user_id: str = Depends(get_current_user_id)):
         "avatar_id", "avatar_color_id", "last_login_at", "last_login_platform",
     ]
     return [
-        {k: u.get(k) for k in safe_fields}
+        {**{k: u.get(k) for k in safe_fields}, "freeze_progress": streak_freeze_progress(u)}
         for u in users
     ]
 

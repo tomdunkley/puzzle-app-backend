@@ -55,6 +55,7 @@ Resources:
           VERIFICATION_CODES_TABLE: !Ref VerificationCodesTable
           PASSWORD_RESET_CODES_TABLE: !Ref PasswordResetCodesTable
           ACHIEVEMENTS_TABLE: !Ref AchievementsTable
+          CHALLENGES_TABLE: !Ref ChallengesTable
           JWT_SECRET: !Ref JwtSecret
           GOOGLE_OAUTH_CLIENT_ID: !Ref GoogleOAuthClientId
           ALLOW_DEV_LOGIN: !Ref AllowDevLogin
@@ -79,6 +80,8 @@ Resources:
             TableName: !Ref FriendRequestsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref AchievementsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ChallengesTable
       Events:
         Api:
           Type: HttpApi
@@ -260,6 +263,53 @@ Resources:
       KeySchema:
         - AttributeName: user_id
           KeyType: HASH
+
+  ChallengesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: challenge_id
+          AttributeType: S
+        - AttributeName: pair_key
+          AttributeType: S
+        - AttributeName: challenger_id
+          AttributeType: S
+        - AttributeName: challengee_id
+          AttributeType: S
+        - AttributeName: created_at
+          AttributeType: S
+      KeySchema:
+        - AttributeName: challenge_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: byPair
+          KeySchema:
+            - AttributeName: pair_key
+              KeyType: HASH
+            - AttributeName: created_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: byChallenger
+          KeySchema:
+            - AttributeName: challenger_id
+              KeyType: HASH
+            - AttributeName: created_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: byChallengee
+          KeySchema:
+            - AttributeName: challengee_id
+              KeyType: HASH
+            - AttributeName: created_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: expires_at_epoch
+        Enabled: true
 
   WebBucket:
     Type: AWS::S3::Bucket

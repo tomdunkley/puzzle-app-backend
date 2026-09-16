@@ -29,6 +29,9 @@ class ScoreSubmissionResult(BaseModel):
     daily_best_result_value: int | None = None  # numbers
     daily_best_duration_seconds: int | None = None  # numbers: time taken for best score (relevant when distance==0)
     is_new_daily_best: bool = False
+    streak_freeze_applied: bool = False
+    streak_freeze_available: bool = False
+    plays_until_freeze: int | None = None  # null when a freeze is already available
 
 
 class LeaderboardEntry(BaseModel):
@@ -77,3 +80,9 @@ class ScoreDetail(BaseModel):
     distance: int | None = None
     duration_seconds: int | None = None
     steps: list[NumbersStep] | None = None
+    # challenge results only
+    seed: str | None = None
+    opponent_name: str | None = None
+    opponent_avatar_id: str | None = None
+    opponent_avatar_color_id: str | None = None
+    opponent_avatar_icon_color: str | None = None

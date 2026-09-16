@@ -73,15 +73,23 @@ def submit_score(
     existing = scores_table.get_item(Key={"puzzle_id": puzzle_id, "user_id": user_id}).get("Item")
     candidate = {**new_fields, "duration_seconds": duration_seconds}
     if existing is not None and _ranking_key(existing) >= _ranking_key(candidate):
-        return {**existing, "current_streak": _current_streak(user_id, game), "is_new_daily_best": False}
+        user_streak = (get_user(user_id) or {}).get("streaks", {}).get(game, {})
+        return {
+            **existing,
+            "current_streak": user_streak.get("current", 0),
+            "is_new_daily_best": False,
+            "streak_freeze_applied": False,
+            "streak_freeze_available": user_streak.get("freeze_available", False),
+        }
 
     # Guests never accrue a streak -- they have no persistent identity to track one
     # against, and a claimed guest score gets its streak applied separately, once,
     # against the real account it lands on (see guest_service.claim_guest_score_for_today).
     user = get_user(user_id)
     is_guest = bool((user or {}).get("is_guest"))
+    streak_result = {}
     if existing is None and not is_guest:
-        update_streak_for_play(user_id, game, puzzle["date"])
+        streak_result = update_streak_for_play(user_id, game, puzzle["date"])
 
     item = {
         "puzzle_id": puzzle_id,
@@ -105,7 +113,18 @@ def submit_score(
     is_new_daily_best = best_other is None or _ranking_key(item) > _ranking_key(best_other)
 
     scores_table.put_item(Item=item)
-    return {**item, "current_streak": _current_streak(user_id, game), "is_new_daily_best": is_new_daily_best}
+    return {
+        **item,
+        "current_streak": streak_result.get("current") or _current_streak(user_id, game),
+        "is_new_daily_best": is_new_daily_best,
+        "streak_freeze_applied": streak_result.get("freeze_applied", False),
+        "streak_freeze_available": streak_result.get("freeze_available", False),
+        "plays_until_freeze": (
+            max(0, streak_result["next_freeze_at"] - streak_result.get("current", 0))
+            if not streak_result.get("freeze_available") and "next_freeze_at" in streak_result
+            else None
+        ),
+    }
 
 
 def _current_streak(user_id: str, game: str) -> int:

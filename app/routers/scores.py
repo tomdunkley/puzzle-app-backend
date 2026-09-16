@@ -70,6 +70,9 @@ def post_score(submission: ScoreSubmission, user_id: str = Depends(get_verified_
         daily_best_result_value=daily_best.get("result_value") if daily_best else None,
         daily_best_duration_seconds=daily_best.get("duration_seconds") if daily_best else None,
         is_new_daily_best=item.get("is_new_daily_best", False),
+        streak_freeze_applied=item.get("streak_freeze_applied", False),
+        streak_freeze_available=item.get("streak_freeze_available", False),
+        plays_until_freeze=item.get("plays_until_freeze"),
     )
 
 

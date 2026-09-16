@@ -24,6 +24,7 @@ PAGES = {
     '/':                 'index.html',
     '/words/':           'words/index.html',
     '/numbers/':         'numbers/index.html',
+    '/routes/':          'routes/index.html',
     '/profile/':         'profile/index.html',
     '/dev/':             'dev/index.html',
     '/login/':           'login/index.html',

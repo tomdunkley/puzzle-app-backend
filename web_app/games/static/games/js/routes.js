@@ -493,6 +493,10 @@
       if (existingIdx >= 0) {
         path = path.slice(0, existingIdx + 1);
       } else if (path.length > 0 && isAdjacent(path[path.length - 1], cell)) {
+        // Don't extend past a terminal — start/end only valid at the ends of the path
+        const [hr, hc] = path[path.length - 1];
+        const atTerminal = (hr === startRow && hc === startCol) || (hr === endRow && hc === endCol);
+        if (atTerminal && path.length > 1) { renderPlay(); return; }
         path = [...path, cell];
         crossMarkers.delete(key);
         tickMarkers.delete(key);

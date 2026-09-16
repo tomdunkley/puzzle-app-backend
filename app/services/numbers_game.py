@@ -22,8 +22,8 @@ def _apply(a: int, op: str, b: int) -> int:
     if op == "+":
         return a + b
     if op == "-":
-        if a <= b:
-            raise InvalidNumbersAttemptError("subtraction must produce a positive result")
+        if a < b:
+            raise InvalidNumbersAttemptError("subtraction must not produce a negative result")
         return a - b
     if op == "*":
         return a * b

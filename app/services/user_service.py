@@ -82,6 +82,10 @@ def _yesterday(date_iso: str) -> str:
     return (datetime.fromisoformat(date_iso).date() - timedelta(days=1)).isoformat()
 
 
+def _n_days_before(date_iso: str, n: int) -> str:
+    return (datetime.fromisoformat(date_iso).date() - timedelta(days=n)).isoformat()
+
+
 def get_user(user_id: str) -> dict | None:
     response = users_table.get_item(Key={"user_id": user_id})
     return response.get("Item")
@@ -350,20 +354,42 @@ def update_streak_for_play(user_id: str, game: str, played_date: str) -> dict:
     date, not "today", so this stays correct under test/replay scenarios). Idempotent
     per date: calling this twice for the same date (e.g. a resubmitted best score)
     does not double-count.
+
+    Returns the updated streak dict plus a transient `freeze_applied` key (not stored
+    in DynamoDB) so callers can surface the event to the user.
     """
     user = get_user(user_id)
     streaks = (user or {}).get("streaks", {})
     streak = streaks.get(game, {"current": 0, "longest": 0, "last_played_date": None})
 
     if streak["last_played_date"] == played_date:
-        return streak
+        return {**streak, "freeze_applied": False}
+
+    freeze_applied = False
+    freeze_available_before = streak.get("freeze_available", False)
 
     if streak["last_played_date"] == _yesterday(played_date):
         streak["current"] += 1
+    elif freeze_available_before and streak["last_played_date"] == _n_days_before(played_date, 2):
+        # Missed exactly one day; apply the freeze to bridge the gap
+        streak["current"] += 2
+        streak["freeze_available"] = False
+        streak["freeze_applied_date"] = _yesterday(played_date)
+        freeze_applied = True
+        # Next freeze is earned 10 plays from where the streak now stands
+        streak["next_freeze_at"] = streak["current"] + 10
     else:
         streak["current"] = 1
+        streak["next_freeze_at"] = 10
+
     streak["longest"] = max(streak["longest"], streak["current"])
     streak["last_played_date"] = played_date
+
+    # Grant a freeze once the streak reaches the threshold and none is currently held
+    next_freeze_at = streak.get("next_freeze_at", 10)
+    if streak["current"] >= next_freeze_at and not streak.get("freeze_available"):
+        streak["freeze_available"] = True
+        streak["next_freeze_at"] = streak["current"] + 10
 
     streaks[game] = streak
     users_table.update_item(
@@ -371,7 +397,7 @@ def update_streak_for_play(user_id: str, game: str, played_date: str) -> dict:
         UpdateExpression="SET streaks = :streaks",
         ExpressionAttributeValues={":streaks": streaks},
     )
-    return streak
+    return {**streak, "freeze_applied": freeze_applied}
 
 
 def delete_account(user_id: str) -> None:

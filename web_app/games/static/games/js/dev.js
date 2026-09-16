@@ -1,5 +1,5 @@
 'use strict';
-
+// v2 - freeze columns
 (() => {
   const PAGE_SIZE = 20;
   let allUsers = [];
@@ -19,10 +19,17 @@
     } catch { return iso; }
   }
 
+  function freezeCell(val) {
+    if (val === null || val === undefined) return '<span class="badge-yes">✓</span>';
+    if (val === 0) return '<span style="color:var(--ink-mid);font-size:0.8rem">~now</span>';
+    return `<span style="font-size:0.82rem">${val}</span>`;
+  }
+
   function renderRow(u) {
     const uid = API.escHtml(u.user_id || '');
     const slug = API.escHtml((u.display_name || '').toLowerCase().replace(/\s+/g, '_'));
     const platform = u.last_login_platform ? `<span style="font-size:0.75rem;color:var(--ink-mid)">(${API.escHtml(u.last_login_platform)})</span>` : '';
+    const fp = u.freeze_progress || {};
     return `<tr>
       <td><a href="/users/${slug}/" style="color:inherit;text-decoration:none">${API.escHtml(u.display_name || '—')}</a></td>
       <td style="font-size:0.72rem;color:var(--ink-mid)">${uid}</td>
@@ -33,6 +40,9 @@
       <td>${yn(u.is_guest)}</td>
       <td>${fmtDate(u.created_at)}</td>
       <td>${fmtDate(u.last_login_at)} ${platform}</td>
+      <td style="text-align:center">${freezeCell(fp.boggle)}</td>
+      <td style="text-align:center">${freezeCell(fp.numbers)}</td>
+      <td style="text-align:center">${freezeCell(fp.routes)}</td>
       <td class="actions-col">
         <button class="btn btn-secondary btn-sm" style="margin-right:4px" onclick="DevAdmin.toggle('${uid}','email_verified',${!u.email_verified},this)">
           ${u.email_verified ? 'Unverify' : 'Verify'}
@@ -74,7 +84,7 @@
     const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
     const start = currentPage * PAGE_SIZE;
     const page = filteredUsers.slice(start, start + PAGE_SIZE);
-    const colCount = 10;
+    const colCount = 13;
 
     countEl.textContent = `${filteredUsers.length} / ${allUsers.length} users`;
     pageInfo.textContent = `Page ${currentPage + 1} of ${totalPages}`;
@@ -92,7 +102,7 @@
     const tbody = document.getElementById('dev-users-tbody');
     const errEl = document.getElementById('dev-error');
     errEl.style.display = 'none';
-    tbody.innerHTML = '<tr><td colspan="10" style="color:var(--ink-mid);padding:16px 8px">Loading…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="13" style="color:var(--ink-mid);padding:16px 8px">Loading…</td></tr>';
     try {
       allUsers = await API.get('v1/dev/users');
       applyFilter();
@@ -143,6 +153,19 @@
   });
 
   document.getElementById('dev-refresh-btn').addEventListener('click', loadUsers);
+  document.getElementById('dev-grant-freeze-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('dev-grant-freeze-btn');
+    const resultEl = document.getElementById('dev-grant-freeze-result');
+    btn.disabled = true;
+    resultEl.textContent = 'Running…';
+    try {
+      const res = await API.post('v1/dev/grant-streak-freezes');
+      resultEl.textContent = `Done — ${res.updated_grants} freeze(s) granted across ${res.updated_users} user(s).`;
+      await loadUsers();
+    } catch (e) {
+      resultEl.textContent = e.message || 'Failed.';
+    } finally { btn.disabled = false; }
+  });
   document.getElementById('dev-search').addEventListener('input', applyFilter);
   document.getElementById('dev-type-filter').addEventListener('change', applyFilter);
   document.getElementById('dev-prev-btn').addEventListener('click', () => {
