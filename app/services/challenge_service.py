@@ -342,13 +342,20 @@ def get_challenge_result(challenge_id: str, target_user_id: str, requesting_user
             "board": puzzle_data.get("board"),
         })
     elif game == "numbers":
+        nums = puzzle_data.get("numbers")
+        tgt = puzzle_data.get("target")
+        sol = None
+        if nums and tgt is not None:
+            from app.services.numbers_game import find_best_solution
+            sol = find_best_solution(nums, tgt)
         detail.update({
-            "numbers": puzzle_data.get("numbers"),
-            "target": puzzle_data.get("target"),
+            "numbers": nums,
+            "target": tgt,
             "result_value": result.get("result_value"),
             "distance": result.get("distance"),
             "duration_seconds": result.get("duration_seconds"),
             "steps": result.get("steps"),
+            "solution_steps": sol,
         })
     elif game == "routes":
         detail.update({"duration_seconds": result.get("duration_seconds")})

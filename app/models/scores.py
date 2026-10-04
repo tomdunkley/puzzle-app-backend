@@ -80,6 +80,7 @@ class ScoreDetail(BaseModel):
     distance: int | None = None
     duration_seconds: int | None = None
     steps: list[NumbersStep] | None = None
+    solution_steps: list[NumbersStep] | None = None  # optimal solution for the numbers puzzle
     # challenge results only
     seed: str | None = None
     opponent_name: str | None = None

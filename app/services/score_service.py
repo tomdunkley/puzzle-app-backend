@@ -257,14 +257,21 @@ def get_score_detail(puzzle_id: str, user_id: str, requesting_user_id: str) -> d
         "locked": locked,
     }
     if game == "numbers":
+        nums = puzzle["numbers"] if puzzle and not locked else None
+        tgt = puzzle["target"] if puzzle and not locked else None
+        sol = None
+        if nums and tgt is not None:
+            from app.services.numbers_game import find_best_solution
+            sol = find_best_solution(nums, tgt)
         detail.update(
             {
-                "numbers": puzzle["numbers"] if puzzle and not locked else None,
-                "target": puzzle["target"] if puzzle and not locked else None,
+                "numbers": nums,
+                "target": tgt,
                 "result_value": item.get("result_value"),
                 "distance": item.get("distance"),
                 "duration_seconds": item.get("duration_seconds"),
                 "steps": item.get("steps", []) if not locked else None,
+                "solution_steps": sol,
             }
         )
     elif game == "routes":
