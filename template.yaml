@@ -20,6 +20,13 @@ Parameters:
   ResendSenderEmail:
     Type: String
     Default: ""
+  FirebaseServiceAccount:
+    Type: String
+    NoEcho: true
+    Default: ""
+  FirebaseProjectId:
+    Type: String
+    Default: ""
 
 Globals:
   Function:
@@ -56,11 +63,14 @@ Resources:
           PASSWORD_RESET_CODES_TABLE: !Ref PasswordResetCodesTable
           ACHIEVEMENTS_TABLE: !Ref AchievementsTable
           CHALLENGES_TABLE: !Ref ChallengesTable
+          CRYPTIC_CLUES_TABLE: !Ref CrypticCluesTable
           JWT_SECRET: !Ref JwtSecret
           GOOGLE_OAUTH_CLIENT_ID: !Ref GoogleOAuthClientId
           ALLOW_DEV_LOGIN: !Ref AllowDevLogin
           RESEND_API_KEY: !Ref ResendApiKey
           RESEND_SENDER_EMAIL: !Ref ResendSenderEmail
+          FIREBASE_SERVICE_ACCOUNT: !Ref FirebaseServiceAccount
+          FIREBASE_PROJECT_ID: !Ref FirebaseProjectId
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref UsersTable
@@ -82,6 +92,8 @@ Resources:
             TableName: !Ref AchievementsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref ChallengesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CrypticCluesTable
       Events:
         Api:
           Type: HttpApi
@@ -310,6 +322,17 @@ Resources:
       TimeToLiveSpecification:
         AttributeName: expires_at_epoch
         Enabled: true
+
+  CrypticCluesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: clue_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: clue_id
+          KeyType: HASH
 
   WebBucket:
     Type: AWS::S3::Bucket

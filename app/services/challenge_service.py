@@ -6,6 +6,7 @@ from botocore.exceptions import ClientError
 from app.db import challenges_table
 from app.services.boggle import score_words
 from app.services.numbers_game import validate_numbers_attempt
+from app.services.push_service import send_push
 from app.services.user_service import get_user
 
 
@@ -195,7 +196,21 @@ def submit_challenge_play(
             if exc.response["Error"]["Code"] != "ConditionalCheckFailedException":
                 raise
 
-    new_status = "completed" if (updated.get("challenger_result") and updated.get("challengee_result")) else "open"
+    both_played = updated.get("challenger_result") is not None and updated.get("challengee_result") is not None
+    new_status = "completed" if both_played else "open"
+
+    # Determine the other player's id and the submitting player's display name for notifications
+    other_id = challengee_id if user_id == challenger_id else challenger_id
+    me = get_user(user_id)
+    my_name = me.get("display_name", "Your opponent") if me else "Your opponent"
+
+    if not both_played:
+        # Notify the other player it's their turn
+        send_push(other_id, "Your turn!", f"{my_name} has played. Time to respond.")
+    else:
+        # Notify the waiting player the result is in
+        send_push(other_id, "Challenge complete", f"See how you did against {my_name}.")
+
     return {**challenge, result_field: play_result, "status": new_status}
 
 

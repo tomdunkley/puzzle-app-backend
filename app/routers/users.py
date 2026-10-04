@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Body, Depends, HTTPException, Response
 
 from app.auth.dependency import get_current_user_id
 from app.data.achievements import ACHIEVEMENTS
@@ -14,6 +14,7 @@ from app.models.users import (
 from app.services.achievement_service import get_unlocked
 from app.services.friend_service import get_friendship_status
 from app.services.score_service import get_daily_best, get_today_score_for_user
+from app.services.push_service import save_fcm_token
 from app.services.user_service import DisplayNameTakenError
 from app.services.user_service import (
     InvalidAvatarColorIdError,
@@ -76,6 +77,15 @@ def update_my_profile(body: UpdateProfileRequest, user_id: str = Depends(get_cur
     except InvalidAvatarColorIdError as exc:
         raise HTTPException(status_code=400, detail="invalid avatar color id") from exc
     return _to_profile(user)
+
+
+@router.post("/users/me/fcm-token", status_code=204)
+def register_fcm_token(
+    token: str = Body(..., embed=True),
+    user_id: str = Depends(get_current_user_id),
+):
+    save_fcm_token(user_id, token)
+    return Response(status_code=204)
 
 
 @router.delete("/users/me", status_code=204)
