@@ -20,10 +20,6 @@ Parameters:
   ResendSenderEmail:
     Type: String
     Default: ""
-  FirebaseServiceAccount:
-    Type: String
-    NoEcho: true
-    Default: ""
   FirebaseProjectId:
     Type: String
     Default: ""
@@ -69,9 +65,10 @@ Resources:
           ALLOW_DEV_LOGIN: !Ref AllowDevLogin
           RESEND_API_KEY: !Ref ResendApiKey
           RESEND_SENDER_EMAIL: !Ref ResendSenderEmail
-          FIREBASE_SERVICE_ACCOUNT: !Ref FirebaseServiceAccount
           FIREBASE_PROJECT_ID: !Ref FirebaseProjectId
       Policies:
+        - SSMParameterReadPolicy:
+            ParameterName: td-puzzles/firebase-service-account
         - DynamoDBCrudPolicy:
             TableName: !Ref UsersTable
         - DynamoDBCrudPolicy:

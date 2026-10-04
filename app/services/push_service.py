@@ -2,6 +2,7 @@ import json
 import logging
 import os
 
+import boto3
 import google.auth.transport.requests
 import google.oauth2.service_account
 import requests as http_requests
@@ -11,15 +12,32 @@ from app.db import users_table
 logger = logging.getLogger(__name__)
 
 _creds = None
+_service_account_info = None
+
+
+def _load_service_account_info() -> dict | None:
+    global _service_account_info
+    if _service_account_info is not None:
+        return _service_account_info
+    try:
+        ssm = boto3.client("ssm", region_name="us-east-1")
+        resp = ssm.get_parameter(
+            Name="/td-puzzles/firebase-service-account",
+            WithDecryption=True,
+        )
+        _service_account_info = json.loads(resp["Parameter"]["Value"])
+        return _service_account_info
+    except Exception:
+        logger.exception("failed to load Firebase service account from SSM")
+        return None
 
 
 def _get_access_token() -> str:
     global _creds
     if _creds is None or not _creds.valid:
-        raw = os.environ.get("FIREBASE_SERVICE_ACCOUNT", "")
-        if not raw:
-            raise ValueError("FIREBASE_SERVICE_ACCOUNT env var not set")
-        info = json.loads(raw)
+        info = _load_service_account_info()
+        if not info:
+            raise ValueError("Firebase service account unavailable")
         _creds = google.oauth2.service_account.Credentials.from_service_account_info(
             info,
             scopes=["https://www.googleapis.com/auth/firebase.messaging"],
