@@ -329,6 +329,7 @@ def get_challenge_result(challenge_id: str, target_user_id: str, requesting_user
         "rank_today_is_tied": False,
         "locked": False,
         "seed": challenge.get("seed"),
+        "opponent_user_id": other_id,
         "opponent_name": other_user["display_name"] if other_user else None,
         "opponent_avatar_id": other_user.get("avatar_id") if other_user else None,
         "opponent_avatar_color_id": other_user.get("avatar_color_id") if other_user else None,
