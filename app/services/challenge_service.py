@@ -186,7 +186,7 @@ def submit_challenge_play(
         try:
             challenges_table.update_item(
                 Key={"challenge_id": challenge_id},
-                UpdateExpression="SET #s = :completed",
+                UpdateExpression="SET #s = :completed REMOVE expires_at_epoch",
                 ConditionExpression="#s = :open",
                 ExpressionAttributeNames={"#s": "status"},
                 ExpressionAttributeValues={":completed": "completed", ":open": "open"},
