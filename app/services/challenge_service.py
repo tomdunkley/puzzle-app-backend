@@ -1,13 +1,16 @@
+import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 
 from botocore.exceptions import ClientError
 
-from app.db import challenges_table
+from app.db import challenges_table, friendships_table
 from app.services.boggle import score_words
 from app.services.numbers_game import validate_numbers_attempt
 from app.services.push_service import send_push
 from app.services.user_service import get_user
+
+logger = logging.getLogger(__name__)
 
 
 class ChallengeNotFoundError(Exception):
@@ -102,7 +105,34 @@ def create_challenge(challenger_id: str, friend_id: str, game: str, seed: str, p
 
 
 def get_challenge(challenge_id: str) -> dict | None:
-    return challenges_table.get_item(Key={"challenge_id": challenge_id}).get("Item")
+    return challenges_table.get_item(
+        Key={"challenge_id": challenge_id},
+        ConsistentRead=True,
+    ).get("Item")
+
+
+def _update_challenge_record(
+    challenger_id: str, challengee_id: str, game: str,
+    challenger_result: dict, challengee_result: dict,
+) -> None:
+    """Atomically increment per-game W/D/L counters on both friendship items."""
+    ck = _challenge_ranking_key(game, challenger_result)
+    gk = _challenge_ranking_key(game, challengee_result)
+    if ck > gk:
+        a_field, b_field = f"ch_{game}_w", f"ch_{game}_l"
+    elif ck < gk:
+        a_field, b_field = f"ch_{game}_l", f"ch_{game}_w"
+    else:
+        a_field = b_field = f"ch_{game}_d"
+    for user_id, friend_id, field in [
+        (challenger_id, challengee_id, a_field),
+        (challengee_id, challenger_id, b_field),
+    ]:
+        friendships_table.update_item(
+            Key={"user_id": user_id, "friend_id": friend_id},
+            UpdateExpression=f"ADD {field} :one",
+            ExpressionAttributeValues={":one": 1},
+        )
 
 
 def get_challenges_for_pair(user_id: str, friend_id: str) -> list[dict]:
@@ -179,10 +209,11 @@ def submit_challenge_play(
             raise AlreadyPlayedError(user_id)
         raise
 
-    # Re-read to see if the other player has also submitted; if so, mark completed.
-    # Using a conditional update here means two simultaneous second-submissions both
-    # attempt the transition but only one wins — either way the final state is correct.
+    # Re-read (strongly consistent) to see if the other player has also submitted.
+    # The conditional update ensures only one of two simultaneous completions fires,
+    # and only that request updates the W/D/L counters.
     updated = get_challenge(challenge_id)
+    completed_by_this_request = False
     if updated.get("challenger_result") is not None and updated.get("challengee_result") is not None:
         try:
             challenges_table.update_item(
@@ -192,11 +223,21 @@ def submit_challenge_play(
                 ExpressionAttributeNames={"#s": "status"},
                 ExpressionAttributeValues={":completed": "completed", ":open": "open"},
             )
+            completed_by_this_request = True
         except ClientError as exc:
             if exc.response["Error"]["Code"] != "ConditionalCheckFailedException":
                 raise
 
     both_played = updated.get("challenger_result") is not None and updated.get("challengee_result") is not None
+
+    if completed_by_this_request:
+        try:
+            _update_challenge_record(
+                challenger_id, challengee_id, challenge["game"],
+                updated["challenger_result"], updated["challengee_result"],
+            )
+        except Exception:
+            logger.exception("failed to update challenge record for %s", challenge_id)
     new_status = "completed" if both_played else "open"
 
     # Determine the other player's id and the submitting player's display name for notifications
@@ -217,6 +258,9 @@ def submit_challenge_play(
 def get_friend_challenge_summary(user_id: str, friend_id: str) -> list[dict]:
     """Per-game summary of challenges between two users."""
     challenges = get_challenges_for_pair(user_id, friend_id)
+    friendship_item = friendships_table.get_item(
+        Key={"user_id": user_id, "friend_id": friend_id}
+    ).get("Item") or {}
     result = []
 
     for game in ("boggle", "numbers", "routes"):
@@ -224,24 +268,9 @@ def get_friend_challenge_summary(user_id: str, friend_id: str) -> list[dict]:
         active = next((c for c in game_challenges if c["status"] == "open"), None)
         last_completed = next((c for c in game_challenges if c["status"] == "completed"), None)
 
-        wins, losses, draws = 0, 0, 0
-        for c in game_challenges:
-            if c["status"] != "completed":
-                continue
-            cr = c.get("challenger_result")
-            cgr = c.get("challengee_result")
-            if cr is None or cgr is None:
-                continue
-            my_result = cr if c["challenger_id"] == user_id else cgr
-            their_result = cgr if c["challenger_id"] == user_id else cr
-            my_key = _challenge_ranking_key(game, my_result)
-            their_key = _challenge_ranking_key(game, their_result)
-            if my_key > their_key:
-                wins += 1
-            elif my_key < their_key:
-                losses += 1
-            else:
-                draws += 1
+        wins = int(friendship_item.get(f"ch_{game}_w", 0))
+        losses = int(friendship_item.get(f"ch_{game}_l", 0))
+        draws = int(friendship_item.get(f"ch_{game}_d", 0))
 
         active_status = None
         if active is not None:
@@ -377,3 +406,75 @@ def get_challenge_result(challenge_id: str, target_user_id: str, requesting_user
         detail.update({"duration_seconds": result.get("duration_seconds")})
 
     return detail
+
+
+def backfill_challenge_records() -> dict:
+    """Scan all completed challenges and write correct W/D/L to FriendshipsTable.
+    Idempotent — overwrites existing counters. Run once after deploy."""
+    items: list[dict] = []
+    scan_kwargs: dict = {
+        "FilterExpression": "#s = :completed",
+        "ExpressionAttributeNames": {"#s": "status"},
+        "ExpressionAttributeValues": {":completed": "completed"},
+    }
+    while True:
+        resp = challenges_table.scan(**scan_kwargs)
+        items.extend(resp.get("Items", []))
+        last = resp.get("LastEvaluatedKey")
+        if not last:
+            break
+        scan_kwargs["ExclusiveStartKey"] = last
+
+    # Accumulate per (user_id, friend_id, game)
+    records: dict[tuple, list[int]] = {}
+    for c in items:
+        cr = c.get("challenger_result")
+        cgr = c.get("challengee_result")
+        if cr is None or cgr is None:
+            continue
+        chid = c["challenger_id"]
+        cgid = c["challengee_id"]
+        game = c["game"]
+        ck = _challenge_ranking_key(game, cr)
+        gk = _challenge_ranking_key(game, cgr)
+
+        for user_id, friend_id, my_key, their_key in [
+            (chid, cgid, ck, gk),
+            (cgid, chid, gk, ck),
+        ]:
+            key = (user_id, friend_id, game)
+            if key not in records:
+                records[key] = [0, 0, 0]
+            if my_key > their_key:
+                records[key][0] += 1
+            elif my_key < their_key:
+                records[key][1] += 1
+            else:
+                records[key][2] += 1
+
+    # Group by (user_id, friend_id) and write with SET (overwrites)
+    from collections import defaultdict
+    friendship_updates: dict[tuple, dict] = defaultdict(dict)
+    for (user_id, friend_id, game), counts in records.items():
+        friendship_updates[(user_id, friend_id)][game] = counts
+
+    updated = 0
+    for (user_id, friend_id), games in friendship_updates.items():
+        set_parts = []
+        values: dict = {}
+        for game, (w, l, d) in games.items():
+            set_parts += [f"ch_{game}_w = :w_{game}", f"ch_{game}_l = :l_{game}", f"ch_{game}_d = :d_{game}"]
+            values[f":w_{game}"] = w
+            values[f":l_{game}"] = l
+            values[f":d_{game}"] = d
+        try:
+            friendships_table.update_item(
+                Key={"user_id": user_id, "friend_id": friend_id},
+                UpdateExpression="SET " + ", ".join(set_parts),
+                ExpressionAttributeValues=values,
+            )
+            updated += 1
+        except Exception:
+            logger.exception("backfill failed for (%s, %s)", user_id, friend_id)
+
+    return {"challenges_scanned": len(items), "friendship_records_updated": updated}
