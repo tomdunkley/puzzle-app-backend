@@ -21,6 +21,9 @@ Parameters:
   ResendSenderEmail:
     Type: String
     Default: ''
+  FirebaseProjectId:
+    Type: String
+    Default: ''
 Globals:
   Function:
     Runtime: python3.12
@@ -49,7 +52,7 @@ Resources:
   ApiFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-oguucbjeft6o/6ee22f5429eeb2717c4de8acdade89be
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-oguucbjeft6o/3ddcbead7457127bfea33fea31add062
       Handler: app.main.handler
       Environment:
         Variables:
@@ -73,6 +76,8 @@ Resources:
             Ref: AchievementsTable
           CHALLENGES_TABLE:
             Ref: ChallengesTable
+          CRYPTIC_CLUES_TABLE:
+            Ref: CrypticCluesTable
           JWT_SECRET:
             Ref: JwtSecret
           GOOGLE_OAUTH_CLIENT_ID:
@@ -83,7 +88,11 @@ Resources:
             Ref: ResendApiKey
           RESEND_SENDER_EMAIL:
             Ref: ResendSenderEmail
+          FIREBASE_PROJECT_ID:
+            Ref: FirebaseProjectId
       Policies:
+      - SSMParameterReadPolicy:
+          ParameterName: td-puzzles/firebase-service-account
       - DynamoDBCrudPolicy:
           TableName:
             Ref: UsersTable
@@ -114,6 +123,9 @@ Resources:
       - DynamoDBCrudPolicy:
           TableName:
             Ref: ChallengesTable
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: CrypticCluesTable
       Events:
         Api:
           Type: HttpApi
@@ -350,6 +362,18 @@ Resources:
         Enabled: true
     Metadata:
       SamResourceId: ChallengesTable
+  CrypticCluesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: clue_id
+        AttributeType: S
+      KeySchema:
+      - AttributeName: clue_id
+        KeyType: HASH
+    Metadata:
+      SamResourceId: CrypticCluesTable
   WebBucket:
     Type: AWS::S3::Bucket
     Properties:

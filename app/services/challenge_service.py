@@ -114,8 +114,9 @@ def get_challenge(challenge_id: str) -> dict | None:
 def _update_challenge_record(
     challenger_id: str, challengee_id: str, game: str,
     challenger_result: dict, challengee_result: dict,
+    challenge_id: str,
 ) -> None:
-    """Atomically increment per-game W/D/L counters on both friendship items."""
+    """Atomically increment per-game W/D/L counters and store last challenge id on both friendship items."""
     ck = _challenge_ranking_key(game, challenger_result)
     gk = _challenge_ranking_key(game, challengee_result)
     if ck > gk:
@@ -124,14 +125,15 @@ def _update_challenge_record(
         a_field, b_field = f"ch_{game}_l", f"ch_{game}_w"
     else:
         a_field = b_field = f"ch_{game}_d"
+    last_id_attr = f"last_ch_{game}_id"
     for user_id, friend_id, field in [
         (challenger_id, challengee_id, a_field),
         (challengee_id, challenger_id, b_field),
     ]:
         friendships_table.update_item(
             Key={"user_id": user_id, "friend_id": friend_id},
-            UpdateExpression=f"ADD {field} :one",
-            ExpressionAttributeValues={":one": 1},
+            UpdateExpression=f"ADD {field} :one SET {last_id_attr} = :cid",
+            ExpressionAttributeValues={":one": 1, ":cid": challenge_id},
         )
 
 
@@ -235,6 +237,7 @@ def submit_challenge_play(
             _update_challenge_record(
                 challenger_id, challengee_id, challenge["game"],
                 updated["challenger_result"], updated["challengee_result"],
+                challenge_id,
             )
         except Exception:
             logger.exception("failed to update challenge record for %s", challenge_id)
@@ -317,7 +320,8 @@ def get_friend_challenge_summary(user_id: str, friend_id: str) -> list[dict]:
 
 
 def get_pending_challenges(user_id: str) -> dict:
-    """Count and by-friend breakdown of challenges waiting on the user to play (challengee only)."""
+    """Count and by-friend breakdown of challenges waiting on the user to play.
+    Also returns completed_ids for the home-screen badge."""
     challengee_resp = challenges_table.query(
         IndexName="byChallengee",
         KeyConditionExpression="challengee_id = :uid",
@@ -332,7 +336,20 @@ def get_pending_challenges(user_id: str) -> dict:
             fid = item["challenger_id"]
             by_friend[fid] = by_friend.get(fid, 0) + 1
 
-    return {"count": sum(by_friend.values()), "by_friend": by_friend}
+    # Collect completed challenge IDs from FriendshipsTable last_ch_{game}_id fields
+    completed_ids: list[str] = []
+    friends_resp = friendships_table.query(
+        KeyConditionExpression="user_id = :uid",
+        ExpressionAttributeValues={":uid": user_id},
+        ProjectionExpression="last_ch_boggle_id, last_ch_numbers_id, last_ch_routes_id",
+    )
+    for item in friends_resp.get("Items", []):
+        for attr in ("last_ch_boggle_id", "last_ch_numbers_id", "last_ch_routes_id"):
+            val = item.get(attr)
+            if val:
+                completed_ids.append(val)
+
+    return {"count": sum(by_friend.values()), "by_friend": by_friend, "completed_ids": completed_ids}
 
 
 def get_challenge_result(challenge_id: str, target_user_id: str, requesting_user_id: str) -> dict:

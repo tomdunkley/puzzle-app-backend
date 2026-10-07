@@ -52,3 +52,4 @@ class ChallengePlayResult(BaseModel):
 class PendingChallengesResponse(BaseModel):
     count: int
     by_friend: dict[str, int]  # friend_id -> count of challenges where I haven't played yet
+    completed_ids: list[str] = []  # last completed challenge id per friend+game pair
