@@ -248,12 +248,21 @@ def submit_challenge_play(
     me = get_user(user_id)
     my_name = me.get("display_name", "Your opponent") if me else "Your opponent"
 
+    game_display = {"boggle": "Words", "numbers": "Numbers", "routes": "Routes"}.get(game, "puzzle")
     if not both_played:
-        # Notify the other player it's their turn
-        send_push(other_id, "Your turn!", f"{my_name} has played. Time to respond.")
+        send_push(
+            other_id,
+            "New challenge",
+            f"{my_name} has created a {game_display} challenge, time to respond!",
+            data={"navigate_to": "challenges", "game": game},
+        )
     else:
-        # Notify the waiting player the result is in
-        send_push(other_id, "Challenge complete", f"See how you did against {my_name}.")
+        send_push(
+            other_id,
+            "Challenge complete",
+            f"See how you did against {my_name} in {game_display}.",
+            data={"navigate_to": "challenges", "game": game},
+        )
 
     return {**challenge, result_field: play_result, "status": new_status}
 
