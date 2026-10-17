@@ -13,10 +13,13 @@ from app.services.cryptic_service import (
     update_clue,
 )
 from app.services.dev_service import (
+    NoPasswordIdentityError,
     NotADeveloperError,
+    UserNotFoundError,
     grant_streak_freezes_to_eligible,
     reset_achievements,
     reset_todays_progress,
+    set_user_password,
     streak_freeze_progress,
     unlock_all_achievements,
 )
@@ -24,6 +27,11 @@ from app.services.challenge_service import backfill_challenge_records
 from app.services.user_service import admin_update_user, is_developer, list_all_users
 
 router = APIRouter()
+
+
+class SetPasswordRequest(BaseModel):
+    display_name: str
+    new_password: str
 
 
 class AdminUpdateRequest(BaseModel):
@@ -173,6 +181,22 @@ def update_user(
         visible_on_global_leaderboard=req.visible_on_global_leaderboard,
     )
     return updated or {}
+
+
+@router.post("/dev/set-password")
+def set_password(req: SetPasswordRequest, user_id: str = Depends(get_current_user_id)):
+    _require_developer(user_id)
+    if not req.new_password:
+        raise HTTPException(status_code=400, detail="new_password is required")
+    try:
+        set_user_password(user_id, req.display_name, req.new_password)
+    except UserNotFoundError:
+        raise HTTPException(status_code=404, detail=f"No user found with display name '{req.display_name}'")
+    except NoPasswordIdentityError:
+        raise HTTPException(status_code=400, detail=f"User '{req.display_name}' has no password identity (Google-only account?)")
+    except NotADeveloperError as exc:
+        raise HTTPException(status_code=403, detail="developer access required") from exc
+    return {"status": "ok"}
 
 
 @router.post("/dev/backfill-challenge-records")

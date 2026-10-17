@@ -58,6 +58,84 @@
       <span id="dev-page-info"></span>
       <button class="btn btn-secondary btn-sm" id="dev-next-btn">Next →</button>
     </div>
+
+    <hr style="margin:32px 0; border:none; border-top:2px solid var(--border)">
+
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap">
+      <h2 style="font-size:1.1rem; font-weight:700">Set User Password</h2>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; max-width:480px">
+      <div style="flex:1; min-width:140px">
+        <label style="display:block; font-size:0.78rem; color:var(--ink-mid); margin-bottom:4px">Display name</label>
+        <input id="set-pw-name" type="text" placeholder="AmberEagle42" style="width:100%; padding:6px 10px; font-size:0.85rem; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--ink); box-sizing:border-box">
+      </div>
+      <div style="flex:1; min-width:140px">
+        <label style="display:block; font-size:0.78rem; color:var(--ink-mid); margin-bottom:4px">New password</label>
+        <input id="set-pw-password" type="password" placeholder="New password" style="width:100%; padding:6px 10px; font-size:0.85rem; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--ink); box-sizing:border-box">
+      </div>
+      <button class="btn btn-secondary btn-sm" id="set-pw-btn">Set Password</button>
+    </div>
+    <p id="set-pw-result" style="font-size:0.82rem; margin-top:8px; display:none"></p>
+
+    <hr style="margin:32px 0; border:none; border-top:2px solid var(--border)">
+
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap">
+      <h2 style="font-size:1.1rem; font-weight:700">Cryptic Clues</h2>
+      <span id="clues-count" class="badge"></span>
+      <button class="btn btn-secondary btn-sm" id="clues-refresh-btn" style="margin-left:auto">Refresh</button>
+    </div>
+    <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; align-items:center">
+      <input id="clues-search" type="text" placeholder="Filter by solution…" style="flex:1; min-width:180px; padding:6px 10px; font-size:0.85rem; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--ink)">
+    </div>
+    <div id="clues-error" style="display:none">
+      <p class="alert alert-error" id="clues-error-msg"></p>
+    </div>
+    <div class="dev-table-wrap">
+      <table class="dev-table">
+        <thead>
+          <tr>
+            <th>Solution</th>
+            <th>Clue</th>
+            <th>Submitted By</th>
+            <th>Created</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="clues-tbody"></tbody>
+      </table>
+    </div>
+    <div id="clues-pagination" style="display:flex; align-items:center; gap:10px; margin-top:12px; font-size:0.85rem; color:var(--ink-mid)">
+      <button class="btn btn-secondary btn-sm" id="clues-prev-btn">← Prev</button>
+      <span id="clues-page-info"></span>
+      <button class="btn btn-secondary btn-sm" id="clues-next-btn">Next →</button>
+    </div>
+  </div>
+</div>
+
+<div id="clue-edit-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:999; align-items:center; justify-content:center">
+  <div style="background:var(--surface,#fff); border-radius:10px; padding:24px; max-width:480px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+    <h3 style="margin-bottom:16px; font-size:1rem">Edit Clue</h3>
+    <input type="hidden" id="clue-edit-id">
+    <label style="display:block; font-size:0.82rem; color:var(--ink-mid); margin-bottom:4px">Solution</label>
+    <input id="clue-edit-solution" type="text" style="width:100%; padding:7px 10px; font-size:0.9rem; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--ink); margin-bottom:12px; box-sizing:border-box">
+    <label style="display:block; font-size:0.82rem; color:var(--ink-mid); margin-bottom:4px">Clue</label>
+    <textarea id="clue-edit-clue" rows="4" style="width:100%; padding:7px 10px; font-size:0.9rem; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--ink); margin-bottom:20px; box-sizing:border-box; resize:vertical"></textarea>
+    <div style="display:flex; gap:10px">
+      <button class="btn btn-secondary btn-sm" id="clue-edit-save">Save</button>
+      <button class="btn btn-ghost btn-sm" id="clue-edit-cancel">Cancel</button>
+    </div>
+    <p id="clue-edit-error" style="font-size:0.82rem; color:var(--danger,#c0392b); margin-top:10px; display:none"></p>
+  </div>
+</div>
+
+<div id="clue-delete-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:999; align-items:center; justify-content:center">
+  <div style="background:var(--surface,#fff); border-radius:10px; padding:24px; max-width:360px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+    <h3 style="margin-bottom:8px; font-size:1rem">Delete clue?</h3>
+    <p id="clue-delete-msg" style="font-size:0.88rem; color:var(--ink-mid); margin-bottom:20px"></p>
+    <div style="display:flex; gap:10px">
+      <button class="btn btn-danger btn-sm" id="clue-delete-yes">Delete</button>
+      <button class="btn btn-ghost btn-sm" id="clue-delete-no">Cancel</button>
+    </div>
   </div>
 </div>
 

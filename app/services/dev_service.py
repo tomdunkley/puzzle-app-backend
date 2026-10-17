@@ -1,4 +1,6 @@
-from app.db import scores_table, users_table
+import bcrypt
+
+from app.db import identities_table, scores_table, users_table
 from app.services.puzzle_service import GAMES, today_iso
 from app.services.user_service import is_developer, list_all_users
 
@@ -74,6 +76,46 @@ def streak_freeze_progress(user: dict) -> dict:
             next_at = streak.get("next_freeze_at", 10)
             result[game] = max(0, next_at - current)
     return result
+
+
+class UserNotFoundError(Exception):
+    pass
+
+
+class NoPasswordIdentityError(Exception):
+    pass
+
+
+def set_user_password(caller_id: str, target_display_name: str, new_password: str) -> None:
+    """Sets the password for a user identified by display name. Developer-only."""
+    if not is_developer(caller_id):
+        raise NotADeveloperError(caller_id)
+
+    all_users = list_all_users()
+    target = next(
+        (u for u in all_users if (u.get("display_name") or "").lower() == target_display_name.lower()),
+        None,
+    )
+    if not target:
+        raise UserNotFoundError(target_display_name)
+
+    target_id = target["user_id"]
+    identities = identities_table.query(
+        IndexName="byUserId",
+        KeyConditionExpression="user_id = :uid",
+        ExpressionAttributeValues={":uid": target_id},
+    ).get("Items", [])
+
+    password_identity = next((i for i in identities if i.get("provider") == "password"), None)
+    if not password_identity:
+        raise NoPasswordIdentityError(target_display_name)
+
+    password_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
+    identities_table.update_item(
+        Key={"provider": "password", "provider_subject": password_identity["provider_subject"]},
+        UpdateExpression="SET password_hash = :h",
+        ExpressionAttributeValues={":h": password_hash},
+    )
 
 
 def reset_todays_progress(user_id: str) -> None:

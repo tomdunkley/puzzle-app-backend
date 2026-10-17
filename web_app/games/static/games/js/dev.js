@@ -203,4 +203,196 @@
   }
 
   document.addEventListener('DOMContentLoaded', init);
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('set-pw-btn').addEventListener('click', async () => {
+      const name = (document.getElementById('set-pw-name').value || '').trim();
+      const password = document.getElementById('set-pw-password').value;
+      const resultEl = document.getElementById('set-pw-result');
+      const btn = document.getElementById('set-pw-btn');
+      if (!name || !password) {
+        resultEl.textContent = 'Display name and password are required.';
+        resultEl.style.color = 'var(--danger, #c0392b)';
+        resultEl.style.display = '';
+        return;
+      }
+      btn.disabled = true;
+      resultEl.style.display = 'none';
+      try {
+        await API.post('v1/dev/set-password', { display_name: name, new_password: password });
+        resultEl.textContent = `Password updated for ${name}.`;
+        resultEl.style.color = 'var(--success, #27ae60)';
+        document.getElementById('set-pw-password').value = '';
+      } catch (e) {
+        resultEl.textContent = e.message || 'Failed to set password.';
+        resultEl.style.color = 'var(--danger, #c0392b)';
+      } finally {
+        resultEl.style.display = '';
+        btn.disabled = false;
+      }
+    });
+  });
+})();
+
+// ── Cryptic Clues section ────────────────────────────────────────────────────
+(() => {
+  const PAGE_SIZE = 30;
+  let allClues = [];
+  let filteredClues = [];
+  let currentPage = 0;
+  let pendingDeleteId = null;
+
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch { return iso; }
+  }
+
+  function renderRow(c) {
+    const id = API.escHtml(c.clue_id || '');
+    return `<tr id="clue-row-${id}">
+      <td style="font-weight:600">${API.escHtml(c.solution || '—')}</td>
+      <td style="font-size:0.88rem">${API.escHtml(c.clue || '—')}</td>
+      <td style="font-size:0.75rem;color:var(--ink-mid)">${API.escHtml(c.submitted_by || '—')}</td>
+      <td style="font-size:0.78rem;color:var(--ink-mid)">${fmtDate(c.created_at)}</td>
+      <td class="actions-col">
+        <button class="btn btn-secondary btn-sm" style="margin-right:4px"
+          onclick="ClueAdmin.openEdit('${id}','${API.escHtml(c.solution||'')}',${JSON.stringify(API.escHtml(c.clue||''))})">
+          Edit
+        </button>
+        <button class="btn btn-danger btn-sm"
+          onclick="ClueAdmin.confirmDelete('${id}','${API.escHtml(c.solution||id)}')">
+          Delete
+        </button>
+      </td>
+    </tr>`;
+  }
+
+  function applyFilter() {
+    const search = (document.getElementById('clues-search').value || '').toUpperCase();
+    filteredClues = search
+      ? allClues.filter(c => (c.solution || '').toUpperCase().includes(search))
+      : allClues.slice();
+    currentPage = 0;
+    renderPage();
+  }
+
+  function renderPage() {
+    const tbody = document.getElementById('clues-tbody');
+    const countEl = document.getElementById('clues-count');
+    const pageInfo = document.getElementById('clues-page-info');
+    const prevBtn = document.getElementById('clues-prev-btn');
+    const nextBtn = document.getElementById('clues-next-btn');
+    const totalPages = Math.max(1, Math.ceil(filteredClues.length / PAGE_SIZE));
+    const start = currentPage * PAGE_SIZE;
+    const page = filteredClues.slice(start, start + PAGE_SIZE);
+
+    countEl.textContent = `${filteredClues.length} / ${allClues.length} clues`;
+    pageInfo.textContent = `Page ${currentPage + 1} of ${totalPages}`;
+    prevBtn.disabled = currentPage === 0;
+    nextBtn.disabled = currentPage >= totalPages - 1;
+
+    if (filteredClues.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--ink-mid);padding:16px 8px">No clues.</td></tr>';
+    } else {
+      tbody.innerHTML = page.map(renderRow).join('');
+    }
+  }
+
+  async function loadClues() {
+    const tbody = document.getElementById('clues-tbody');
+    const errEl = document.getElementById('clues-error');
+    errEl.style.display = 'none';
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--ink-mid);padding:16px 8px">Loading…</td></tr>';
+    try {
+      allClues = await API.get('v1/dev/cryptic-clues');
+      applyFilter();
+    } catch (e) {
+      tbody.innerHTML = '';
+      errEl.style.display = '';
+      document.getElementById('clues-error-msg').textContent = e.message || 'Failed to load clues.';
+    }
+  }
+
+  window.ClueAdmin = {
+    openEdit(id, solution, clue) {
+      document.getElementById('clue-edit-id').value = id;
+      document.getElementById('clue-edit-solution').value = solution;
+      document.getElementById('clue-edit-clue').value = clue;
+      document.getElementById('clue-edit-error').style.display = 'none';
+      document.getElementById('clue-edit-modal').style.display = 'flex';
+    },
+    confirmDelete(id, solution) {
+      pendingDeleteId = id;
+      document.getElementById('clue-delete-msg').textContent =
+        `Delete "${solution}"? This cannot be undone.`;
+      document.getElementById('clue-delete-modal').style.display = 'flex';
+    },
+  };
+
+  document.getElementById('clue-edit-save').addEventListener('click', async () => {
+    const id = document.getElementById('clue-edit-id').value;
+    const solution = document.getElementById('clue-edit-solution').value.trim().toUpperCase();
+    const clue = document.getElementById('clue-edit-clue').value.trim();
+    const errEl = document.getElementById('clue-edit-error');
+    if (!solution || !clue) { errEl.textContent = 'Both fields are required.'; errEl.style.display = ''; return; }
+    const btn = document.getElementById('clue-edit-save');
+    btn.disabled = true;
+    try {
+      await API.patch(`v1/dev/cryptic-clues/${id}`, { solution, clue });
+      document.getElementById('clue-edit-modal').style.display = 'none';
+      await loadClues();
+    } catch (e) {
+      errEl.textContent = e.message || 'Save failed.';
+      errEl.style.display = '';
+    } finally { btn.disabled = false; }
+  });
+
+  document.getElementById('clue-edit-cancel').addEventListener('click', () => {
+    document.getElementById('clue-edit-modal').style.display = 'none';
+  });
+
+  document.getElementById('clue-delete-yes').addEventListener('click', async () => {
+    if (!pendingDeleteId) return;
+    const btn = document.getElementById('clue-delete-yes');
+    btn.disabled = true;
+    try {
+      await API.del(`v1/dev/cryptic-clues/${pendingDeleteId}`);
+      document.getElementById('clue-delete-modal').style.display = 'none';
+      pendingDeleteId = null;
+      await loadClues();
+    } catch (e) {
+      alert(e.message);
+    } finally { btn.disabled = false; }
+  });
+
+  document.getElementById('clue-delete-no').addEventListener('click', () => {
+    document.getElementById('clue-delete-modal').style.display = 'none';
+    pendingDeleteId = null;
+  });
+
+  document.getElementById('clues-refresh-btn').addEventListener('click', loadClues);
+  document.getElementById('clues-search').addEventListener('input', applyFilter);
+  document.getElementById('clues-prev-btn').addEventListener('click', () => {
+    if (currentPage > 0) { currentPage--; renderPage(); }
+  });
+  document.getElementById('clues-next-btn').addEventListener('click', () => {
+    if (currentPage < Math.ceil(filteredClues.length / PAGE_SIZE) - 1) { currentPage++; renderPage(); }
+  });
+
+  // Load clues once the developer gate has confirmed access.
+  // The Users section fires its own init; we piggyback on DOMContentLoaded
+  // and wait for the dev-content div to become visible before loading.
+  const observer = new MutationObserver(() => {
+    const el = document.getElementById('dev-content');
+    if (el && el.style.display !== 'none') {
+      observer.disconnect();
+      loadClues();
+    }
+  });
+  document.addEventListener('DOMContentLoaded', () => {
+    observer.observe(document.getElementById('dev-content'), { attributes: true, attributeFilter: ['style'] });
+  });
 })();
