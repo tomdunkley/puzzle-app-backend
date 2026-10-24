@@ -69,7 +69,7 @@ def _get_fcm_token(user_id: str) -> str | None:
     return item.get("fcm_token") if item else None
 
 
-def send_push(user_id: str, title: str, body: str) -> None:
+def send_push(user_id: str, title: str, body: str, data: dict | None = None) -> None:
     """Send a push notification to the given user. Silently no-ops if the token
     is absent or if the Firebase env vars are not configured."""
     project_id = os.environ.get("FIREBASE_PROJECT_ID", "")
@@ -83,9 +83,16 @@ def send_push(user_id: str, title: str, body: str) -> None:
     try:
         access_token = _get_access_token()
         url = f"https://fcm.googleapis.com/v1/projects/{project_id}/messages:send"
+        message: dict = {
+            "token": token,
+            "notification": {"title": title, "body": body},
+            "android": {"notification": {"icon": "ic_notification"}},
+        }
+        if data:
+            message["data"] = {k: str(v) for k, v in data.items()}
         resp = http_requests.post(
             url,
-            json={"message": {"token": token, "notification": {"title": title, "body": body}}},
+            json={"message": message},
             headers={"Authorization": f"Bearer {access_token}"},
             timeout=5,
         )

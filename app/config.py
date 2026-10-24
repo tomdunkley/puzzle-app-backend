@@ -14,6 +14,7 @@ class Settings:
     password_reset_codes_table: str = os.environ.get("PASSWORD_RESET_CODES_TABLE", "td-puzzles-password-reset-codes")
     achievements_table: str = os.environ.get("ACHIEVEMENTS_TABLE", "td-puzzles-achievements")
     challenges_table: str = os.environ.get("CHALLENGES_TABLE", "td-puzzles-challenges")
+    cryptic_clues_table: str = os.environ.get("CRYPTIC_CLUES_TABLE", "td-puzzles-cryptic-clues")
 
     jwt_secret: str = os.environ.get("JWT_SECRET", "dev-secret-change-me")
     jwt_access_token_minutes: int = int(os.environ.get("JWT_ACCESS_TOKEN_MINUTES", "60"))
