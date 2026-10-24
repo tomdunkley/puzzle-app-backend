@@ -52,7 +52,7 @@ Resources:
   ApiFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-oguucbjeft6o/ee2bda0851a769fa8f8d649a2a226e9a
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-oguucbjeft6o/3fa8997d057cf0104c256ebb38a00781
       Handler: app.main.handler
       Environment:
         Variables:
@@ -139,7 +139,7 @@ Resources:
   StatsJobsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-oguucbjeft6o/ee2bda0851a769fa8f8d649a2a226e9a
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-oguucbjeft6o/3fa8997d057cf0104c256ebb38a00781
       Handler: app.jobs.handler
       Timeout: 600
       Environment:
