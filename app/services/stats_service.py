@@ -221,8 +221,14 @@ def _challenge_record(user_id: str) -> tuple[int, int, int]:
     return wins, draws, losses
 
 
+class UserNotFoundError(Exception):
+    pass
+
+
 def get_user_stats(user_id: str) -> dict:
-    user = get_user(user_id) or {}
+    user = get_user(user_id)
+    if user is None:
+        raise UserNotFoundError(user_id)
     per_game: dict[str, dict] = {}
     for game in _GAMES:
         own = user.get(f"stats_{game}")
@@ -237,6 +243,10 @@ def get_user_stats(user_id: str) -> dict:
     wins, draws, losses = _challenge_record(user_id)
     return {
         "user_id": user_id,
+        "display_name": user.get("display_name", ""),
+        "avatar_id": user.get("avatar_id"),
+        "avatar_color_id": user.get("avatar_color_id"),
+        "avatar_icon_color": user.get("avatar_icon_color"),
         "trophies_unlocked": len(get_unlocked(user_id) & ACHIEVEMENTS.keys()),
         "trophies_total": len(ACHIEVEMENTS),
         "challenge_wins": wins,

@@ -15,6 +15,7 @@ from app.services.achievement_service import get_unlocked
 from app.services.friend_service import get_friendship_status
 from app.services.score_service import get_daily_best, get_today_score_for_user
 from app.services.push_service import save_fcm_token
+from app.services.stats_service import UserNotFoundError as StatsUserNotFoundError
 from app.services.stats_service import get_user_stats
 from app.services.user_service import DisplayNameTakenError
 from app.services.user_service import (
@@ -60,7 +61,19 @@ def get_my_profile(user_id: str = Depends(get_current_user_id)):
 
 @router.get("/users/me/stats")
 def get_my_stats(user_id: str = Depends(get_current_user_id)):
-    return get_user_stats(user_id)
+    return _stats_or_404(user_id)
+
+
+@router.get("/users/{target_user_id}/stats")
+def get_user_stats_endpoint(target_user_id: str, user_id: str = Depends(get_current_user_id)):
+    return _stats_or_404(target_user_id)
+
+
+def _stats_or_404(user_id: str) -> dict:
+    try:
+        return get_user_stats(user_id)
+    except StatsUserNotFoundError:
+        raise HTTPException(status_code=404, detail="user not found")
 
 
 @router.patch("/users/me", response_model=UserProfile)
