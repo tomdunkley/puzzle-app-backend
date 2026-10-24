@@ -52,7 +52,7 @@ Resources:
   ApiFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-oguucbjeft6o/3ddcbead7457127bfea33fea31add062
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-oguucbjeft6o/ee2bda0851a769fa8f8d649a2a226e9a
       Handler: app.main.handler
       Environment:
         Variables:
@@ -136,6 +136,46 @@ Resources:
             Method: ANY
     Metadata:
       SamResourceId: ApiFunction
+  StatsJobsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-oguucbjeft6o/ee2bda0851a769fa8f8d649a2a226e9a
+      Handler: app.jobs.handler
+      Timeout: 600
+      Environment:
+        Variables:
+          USERS_TABLE:
+            Ref: UsersTable
+          SCORES_TABLE:
+            Ref: ScoresTable
+          PUZZLES_TABLE:
+            Ref: PuzzlesTable
+          FRIENDSHIPS_TABLE:
+            Ref: FriendshipsTable
+          ACHIEVEMENTS_TABLE:
+            Ref: AchievementsTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: UsersTable
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: ScoresTable
+      Events:
+        AwardFirstPlaces:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(1 8 * * ? *)
+            ScheduleExpressionTimezone: Europe/London
+            Input: '{"job": "award_first_places"}'
+        RebuildStats:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(30 8 * * ? *)
+            ScheduleExpressionTimezone: Europe/London
+            Input: '{"job": "rebuild_stats"}'
+    Metadata:
+      SamResourceId: StatsJobsFunction
   UsersTable:
     Type: AWS::DynamoDB::Table
     Properties:

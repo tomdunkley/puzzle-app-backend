@@ -1,11 +1,14 @@
+import logging
 import uuid
 from datetime import datetime, timezone
 
 from app.db import scores_table
 from app.services.boggle import score_words
 from app.services.numbers_game import validate_numbers_attempt
-from app.services.puzzle_service import get_puzzle
+from app.services.puzzle_service import get_puzzle, today_iso
 from app.services.user_service import get_user, update_streak_for_play
+
+logger = logging.getLogger(__name__)
 
 
 def _now_iso() -> str:
@@ -113,6 +116,8 @@ def submit_score(
     is_new_daily_best = best_other is None or _ranking_key(item) > _ranking_key(best_other)
 
     scores_table.put_item(Item=item)
+    if not is_guest:
+        _refresh_stats_safely(user_id, game)
     return {
         **item,
         "current_streak": streak_result.get("current") or _current_streak(user_id, game),
@@ -125,6 +130,15 @@ def submit_score(
             else None
         ),
     }
+
+
+def _refresh_stats_safely(user_id: str, game: str) -> None:
+    # Stats are a nice-to-have; a failure here must never fail the score submission itself.
+    from app.services.stats_service import refresh_own_stats
+    try:
+        refresh_own_stats(user_id, game)
+    except Exception:
+        logger.exception("failed to refresh stats for %s/%s", user_id, game)
 
 
 def _current_streak(user_id: str, game: str) -> int:
@@ -169,8 +183,7 @@ def get_daily_best(user_id: str, game: str) -> dict | None:
 
 def get_today_score_for_user(user_id: str, game: str) -> dict | None:
     """The user's score for today's daily puzzle (None if not played today)."""
-    today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    return get_user_score_item(f"{game}_{today_iso}", user_id)
+    return get_user_score_item(f"{game}_{today_iso()}", user_id)
 
 
 def has_played(puzzle_id: str, user_id: str) -> bool:

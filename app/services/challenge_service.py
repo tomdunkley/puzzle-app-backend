@@ -429,7 +429,10 @@ def get_challenge_result(challenge_id: str, target_user_id: str, requesting_user
             "solution_steps": sol,
         })
     elif game == "routes":
-        detail.update({"duration_seconds": result.get("duration_seconds")})
+        detail.update({
+            "duration_seconds": result.get("duration_seconds"),
+            "grid_size": puzzle_data.get("grid_size"),
+        })
 
     return detail
 

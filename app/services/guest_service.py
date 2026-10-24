@@ -1,6 +1,7 @@
 from app.auth.jwt import InvalidTokenError, decode_token
 from app.db import scores_table
 from app.services.puzzle_service import get_or_create_today_puzzle, list_games
+from app.services.score_service import _refresh_stats_safely
 from app.services.user_service import delete_guest_user, get_user, update_streak_for_play
 
 
@@ -37,6 +38,7 @@ def claim_guest_score_for_today(new_user_id: str, guest_access_token: str | None
         if scores_table.get_item(Key=new_key).get("Item") is None:
             scores_table.put_item(Item={**guest_score, "user_id": new_user_id})
             update_streak_for_play(new_user_id, puzzle["game"], puzzle["date"])
+            _refresh_stats_safely(new_user_id, puzzle["game"])
         scores_table.delete_item(Key=guest_key)
 
     delete_guest_user(guest_user_id)

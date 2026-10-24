@@ -83,6 +83,7 @@ class ScoreDetail(BaseModel):
     solution_steps: list[NumbersStep] | None = None  # optimal solution for the numbers puzzle
     # challenge results only
     seed: str | None = None
+    grid_size: int | None = None  # routes
     opponent_user_id: str | None = None
     opponent_name: str | None = None
     opponent_avatar_id: str | None = None

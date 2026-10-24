@@ -15,6 +15,7 @@ from app.services.achievement_service import get_unlocked
 from app.services.friend_service import get_friendship_status
 from app.services.score_service import get_daily_best, get_today_score_for_user
 from app.services.push_service import save_fcm_token
+from app.services.stats_service import get_user_stats
 from app.services.user_service import DisplayNameTakenError
 from app.services.user_service import (
     InvalidAvatarColorIdError,
@@ -55,6 +56,11 @@ def get_my_profile(user_id: str = Depends(get_current_user_id)):
     if user is None:
         raise HTTPException(status_code=404, detail="user not found")
     return _to_profile(user)
+
+
+@router.get("/users/me/stats")
+def get_my_stats(user_id: str = Depends(get_current_user_id)):
+    return get_user_stats(user_id)
 
 
 @router.patch("/users/me", response_model=UserProfile)

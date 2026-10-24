@@ -99,6 +99,39 @@ Resources:
             Path: /{proxy+}
             Method: ANY
 
+  StatsJobsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .build/
+      Handler: app.jobs.handler
+      Timeout: 600
+      Environment:
+        Variables:
+          USERS_TABLE: !Ref UsersTable
+          SCORES_TABLE: !Ref ScoresTable
+          PUZZLES_TABLE: !Ref PuzzlesTable
+          FRIENDSHIPS_TABLE: !Ref FriendshipsTable
+          ACHIEVEMENTS_TABLE: !Ref AchievementsTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref ScoresTable
+      Events:
+        # Dailies roll over at 08:00 UK time (puzzle_service.today_iso).
+        AwardFirstPlaces:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(1 8 * * ? *)
+            ScheduleExpressionTimezone: Europe/London
+            Input: '{"job": "award_first_places"}'
+        RebuildStats:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(30 8 * * ? *)
+            ScheduleExpressionTimezone: Europe/London
+            Input: '{"job": "rebuild_stats"}'
+
   UsersTable:
     Type: AWS::DynamoDB::Table
     Properties:
